@@ -1,2 +1,2 @@
 # ansible
-Ansible automation
+Server automation tool
