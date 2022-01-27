@@ -1,0 +1,9 @@
+- name: Check if a reboot is required
+  register: reboot_required
+  stat: path=/var/run/reboot-required get_md5=no
+
+- name: Reboot
+  # command: /sbin/reboot
+  reboot:
+    post_reboot_delay: 60
+  when: reboot_required.stat.exists == true

@@ -1,0 +1,9 @@
+---
+- name: Update machines
+  hosts: servers
+  become: true
+  gather_facts: true
+
+  roles:
+    - common
+    - setup

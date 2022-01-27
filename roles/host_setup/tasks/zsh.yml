@@ -1,0 +1,5 @@
+---
+- name: Install latest zsh
+  apt:
+    name: zsh
+    state: latest

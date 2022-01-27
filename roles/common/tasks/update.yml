@@ -1,0 +1,9 @@
+---
+- name: Update repositories cache and upgrade packages (Ubuntu and Debian)
+  apt:
+    update_cache: true
+    cache_valid_time: 3600
+    autoclean: true
+    autoremove: true
+    upgrade: dist
+  when: ansible_distribution in ["Ubuntu", "Debian"]

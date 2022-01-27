@@ -1,0 +1,16 @@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   @file           :   playbooks/workstation_setup.yml
+#   @description    :   initial setup of workstation machine
+#   @usage          :   ansible-playbook -i inventories/development.yml --limit workstations playbooks/workstation_setup.yml --vault-pass ~/.vault_key
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+---
+- name: Setup WORKSTATION
+  hosts: workstations
+  become: no
+  connection: local
+  gather_facts: no
+  roles:
+    - common
+    - common_setup
+    - workstation_setup

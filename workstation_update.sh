@@ -1,0 +1,1 @@
+ ansible-playbook -i inventories/development.yml playbooks/workstation_update.yml --ask-become-pass --vault-pass ~/.vault_key -C

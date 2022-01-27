@@ -1,0 +1,103 @@
+# Inventory file for development environment
+# Encryption instructions in comments below
+
+servers:
+  hosts:
+    192.168.0.133:
+  vars:
+    ansible_user: ansible_test
+    ansible_passphrase:
+    timezone: America/New_York
+
+workstations:
+  hosts:
+    localhost:
+      ansible_distribution: "Ubuntu"
+  vars:
+    # Super user SSH installed only on workstation
+    ssh_key_profile: "{{sudo_user}}"
+    sudo_ssh_passphrase: !vault |
+      $ANSIBLE_VAULT;1.1;AES256
+      37656338363134383363396263383665396565346165306130323636643163336636386232646566
+      3935663437363365373332353238623638356461373461310a653661383635326166383666393735
+      65616565623836336531303864363265303135386431373032366565303232303862316237616134
+      3139323136316563300a336531323631376438613735393330626238323866356135383735663263
+      62363934313638313165316366383565303962616431373665393263383161616265643061613761
+      39616639353662363362306263613461643730383239316535656566633435326636386434393263
+      39643630306539326461376335303936623362653433653130653638373164336362306238623635
+      65386632373062366130613332356263643663346265333563316331373233323930326634303264
+      35366638363566383065323530373965366265373665613263663431396261323636
+
+all:
+  children:
+    servers:
+    workstatons:
+  vars:
+    # Super user installed in all machines, including workstation. --------------------
+    sudo_user: juanlazarde_test
+    sudo_password: !vault |
+      $ANSIBLE_VAULT;1.1;AES256
+      37656338363134383363396263383665396565346165306130323636643163336636386232646566
+      3935663437363365373332353238623638356461373461310a653661383635326166383666393735
+      65616565623836336531303864363265303135386431373032366565303232303862316237616134
+      3139323136316563300a336531323631376438613735393330626238323866356135383735663263
+      62363934313638313165316366383565303962616431373665393263383161616265643061613761
+      39616639353662363362306263613461643730383239316535656566633435326636386434393263
+      39643630306539326461376335303936623362653433653130653638373164336362306238623635
+      65386632373062366130613332356263643663346265333563316331373233323930326634303264
+      35366638363566383065323530373965366265373665613263663431396261323636
+    # SSH variables --------------------
+    ssh_key_type: "ed25519"
+
+# -----------------------------------------------------------
+# Hash and Encrypt secrets (i.e. Passwords, Passphrases, etc)
+#------------------------------------------------------------
+# Install whois: $ sudo apt install -y whois
+# Create Hashed password: $ mkpasswd --method=sha-512 --salt=1234asdf
+# Delete the line breaK: $ tr -d '\n'
+# Then encrypt it with ansible vault: $ ansible-vault create --vault-password-file ~/.vault_key
+# All in one: $ mkpasswd --method=sha-512 --salt=1234asdf | tr -d '\n' | ansible-vault encrypt --vault-password-file ~/.vault_key | sed '/$ANSIBLE/i \!vault |'
+# -----------------------------------------------------------
+
+# This is the default ansible 'hosts' file.
+#
+# It should live in /etc/ansible/hosts
+#
+#   - Comments begin with the '#' character
+#   - Blank lines are ignored
+#   - Groups of hosts are delimited by [header] elements
+#   - You can enter hostnames or ip addresses
+#   - A hostname/ip can be a member of multiple groups
+
+# Ex 1: Ungrouped hosts, specify before any group headers.
+
+## green.example.com
+## blue.example.com
+## 192.168.100.1
+## 192.168.100.10
+
+# Ex 2: A collection of hosts belonging to the 'webservers' group
+
+## alpha.example.org
+## beta.example.org
+## 192.168.1.100
+## 192.168.1.110
+
+# If you have multiple hosts following a pattern you can specify
+# them like this:
+
+## www[001:006].example.com
+
+# Ex 3: A collection of database servers in the 'dbservers' group
+
+## [dbservers]
+##
+## db01.intranet.mydomain.net
+## db02.intranet.mydomain.net
+## 10.25.1.56
+## 10.25.1.57
+
+# Here's another example of host ranges, this time there are no
+# leading 0s:
+
+## db-[99:101]-node.example.com

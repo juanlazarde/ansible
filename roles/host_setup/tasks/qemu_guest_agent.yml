@@ -1,0 +1,6 @@
+---
+- name: Install QEMU Guest Agent for Proxmox
+  package:
+    name: qemu-guest-agent
+    state: latest
+  when: ansible_distribution in ["Ubuntu", "Debian"] and ansible_system_vendor == "QEMU"

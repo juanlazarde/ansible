@@ -1,0 +1,10 @@
+---
+- name: Set timezone to "{{ timezone }}"
+  timezone:
+    name: "{{ timezone }}"
+  notify: restart timezone dependent services
+
+- name: Reconfigure Timezone Data
+  shell: dpkg-reconfigure -f noninteractive tzdata
+  sudo: true
+  when: timezone.changed

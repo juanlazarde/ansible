@@ -1,0 +1,5 @@
+---
+- name: Locking root password
+  user:
+    name: root
+    password_lock: yes

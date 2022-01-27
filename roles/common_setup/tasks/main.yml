@@ -1,0 +1,13 @@
+---
+- name: Automatic Updates
+  include_tasks: unattended_upgrades.yml
+
+- name: Add super user
+  include_tasks: super_user.yml
+
+- name: Disable/Lock root password
+  include_tasks: lock_root.yml
+
+- name: Add SSH keys
+  tags: development
+  include_tasks: ssh_key.yml

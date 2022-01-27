@@ -1,0 +1,15 @@
+---
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/user_module.html
+- name: Create a login user for "{{ sudo_user }}"
+  no_log: true
+  user:
+    name: "{{ sudo_user }}"
+    password: "{{ sudo_password }}"
+    groups: sudo
+    state: present
+    shell: /bin/bash
+    system: no
+    createhome: yes
+    home: "/home/{{ sudo_user }}"
+    append: yes
+    comment: "{{ sudo_user }}"

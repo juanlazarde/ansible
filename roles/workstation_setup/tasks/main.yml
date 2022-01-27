@@ -1,0 +1,3 @@
+---
+- name: Create local SSH key pair
+  include_tasks: ssh_keypair.yml
