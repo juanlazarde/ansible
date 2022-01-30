@@ -1,9 +1,0 @@
----
-- name: Set up new machines
-  hosts: servers
-  become: false
-  gather_facts: true
-
-  roles:
-    - common
-    - host_setup

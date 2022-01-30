@@ -1,0 +1,49 @@
+---
+# Reference https://github.com/gantsign/ansible-role-oh-my-zsh
+
+- name: "[zsh & oh-my-zsh] Install dependencies zsh, git"
+  apt:
+    name: [zsh, git]
+    state: present
+
+- name: "[zsh & oh-my-zsh] Backup zsh configruation file (.zshrc)"
+  copy:
+    src: ~/.zshrc
+    dest: ~/.zshrc.bak
+
+- name: "[zsh & oh-my-zsh] Set zsh as default shell"
+  user:
+    name: "{{sudo_user}}"
+    shell: /bin/zsh
+
+- name: "[zsh & oh-my-zsh] Clone oh-my-zsh"
+  # become_user: '{{ user.username }}'
+  # core.autocrlf=input prevents https://github.com/robbyrussell/oh-my-zsh/issues/4402
+  command: "git clone -c core.autocrlf=input --depth=1 https://github.com/robbyrussell/oh-my-zsh.git .oh-my-zsh"
+  args:
+    creates: "~/.oh-my-zsh"
+
+- name: "[zsh & oh-my-zsh] Set permissions of ~./oh-my-zsh"
+  file:
+    path: "~/.oh-my-zsh"
+    # Prevent the cloned repository from having insecure permissions. Failing to do
+    # so causes compinit() calls to fail with "command not found: compdef" errors
+    # for users with insecure umasks (e.g., "002", allowing group writability).
+    mode: "go-w"
+    recurse: yes
+
+- name: "[zsh & oh-my-zsh] Configure .zshrc"
+  block:
+    - name: "[zsh & oh-my-zsh] Theme"
+      lineinfile:
+        dest: "~/.zshrc"
+        regexp: "^ *[^#]ZSH_THEME="
+        line: "ZSH_THEME='{{oh_my_zsh_theme}}'"
+
+    - name: "[zsh & oh-my-zsh] Plugins"
+      lineinfile:
+        dest: "~/.zshrc"
+        regexp: "^ *[^#]plugins="
+        line: "plugins=({{oh_my_zsh_plugins | join(' ') }})"
+        # consider: "^((?:(?!#).)*?|^#\\s?)plugins="
+        # consider: "(?:^\s*[^#]plugins=\s*)(\(.+\))"

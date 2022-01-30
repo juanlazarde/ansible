@@ -1,1 +1,1 @@
- ansible-playbook -i inventories/development.yml playbooks/host_setup.yml --ask-become-pass --vault-pass ~/.vault_key -C
+ ansible-playbook -i hosts.yml playbooks/host_setup.yml --ask-become-pass --vault-pass ~/.vault_key -C

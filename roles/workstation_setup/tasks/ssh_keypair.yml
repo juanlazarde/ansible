@@ -5,8 +5,24 @@
     generate_ssh_key: yes
     ssh_key_type: "{{ssh_key_type}}"
     ssh_key_passphrase: "{{sudo_ssh_passphrase}}"
-    ssh_key_file: "~/.ssh/{{ssh_key_profile}}-{{ssh_key_type}}"
-    ssh_key_comment: "{{ssh_key_profile}} key"
+    ssh_key_file: "{{ssh_filename}}"
+    ssh_key_comment: "{{ssh_filename}} key"
   # shell:
-  #   cmd: ssh-keygen -q -t {{ssh_key_type}} -N "{{sudo_ssh_passphrase}}" -f "~/.ssh/{{ssh_key_profile}}-{{ssh_key_type}}" -C "{{ssh_key_profile}} key"
-  #   creates: "~/.ssh/{{ssh_key_profile}}-{{ssh_key_type}}"
+  #   cmd: ssh-keygen -q -t {{ssh_key_type}} -N "{{sudo_ssh_passphrase}}" -f "{{ssh_filename}}" -C "{{ssh_filename}} key"
+  #   creates: "{{ssh_filename}}"
+
+- vars:
+    ssh_filename_private: "{{ ssh_filename | regex_replace('(.*)(\\.[^.]+)$', '\\1') }}"
+  block:
+    - name: Set alias 'ssha' for frequent SSH logins w/o password
+      blockinfile:
+        path: "{{item}}"
+        block: |
+
+          # Alias to request SSH password only once per session
+          alias ssha='eval $(ssh-agent -s) && ssh-add {{ssh_filename_private}}'
+      with_items:
+        - "~/.bashrc"
+        - "~/.zshrc"
+    # shell:
+    #   cmd: echo ""alias ssha='eval $(ssh-agent -s) && ssh-add {{ssh_filename_private}}'"" >> ~/.zshrc >> ~/.bashrc

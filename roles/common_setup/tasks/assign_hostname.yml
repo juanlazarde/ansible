@@ -1,0 +1,16 @@
+---
+- name: "[assign hostname] Set a hostname"
+  block:
+    - name: "[assign hostname] Comment out current hostname"
+      replace:
+        path: /etc/host
+        regexp: "(^127\\.0\\.1\\.1.*)"
+        replace: "# \\1"
+
+    - name: "[assign hostname] Add hostname to 127.0.1.1"
+      lineinfile:
+        path: /etc/host
+        insertafter: "# 127.0.1.1"
+        line: "127.0.1.1    {{ my_name }}"
+
+  when: my_name is defined and my_name != ""

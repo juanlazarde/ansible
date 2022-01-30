@@ -1,2 +1,2 @@
  clear
- ansible-playbook -i inventories/development.yml --limit workstations playbooks/workstation_setup.yml --vault-pass ~/.vault_key -C -v # --ask-become-pass
+ ansible-playbook playbooks/workstation_setup.yml --vault-password-file ~/.vault_key -v -v --ask-become-pass -tags test

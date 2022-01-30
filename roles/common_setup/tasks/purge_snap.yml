@@ -1,0 +1,45 @@
+---
+# Reference: https://github.com/bodsch/ansible-snapd
+
+- vars:
+    snapd_files:
+      - /snap
+      - /var/snap
+      - /var/lib/snapd
+      - /var/cache/snapd
+      - /run/snapd-snap.socket
+      - /run/snapd.socket
+      - /etc/apt/apt.conf.d/20snapd.conf
+      - /usr/lib/snapd
+      - ~/snap
+
+  become: true
+  block:
+    - name: "[remove snap] Shutdown services, sockets and timers"
+      service:
+        name: snapd
+        state: stopped
+        enabled: false
+      failed_when: false
+
+    - name: "[remove snap] Remove snapd packages"
+      apt:
+        name: snapd
+        state: absent
+        purge: true
+        autoremove: true
+        autoclean: true
+
+    - name: "[remove snap] Block future installations of snapd"
+      template:
+        src: purge_snap.j2
+        dest: /etc/apt/preferences.d/snapd.pref
+        mode: 0644
+
+    - name: "[remove snap] Remove snapd-related directories"
+      file:
+        path: "{{ item }}"
+        state: absent
+      loop: "{{ snapd_files }}"
+      loop_control:
+        label: "{{ item }}"

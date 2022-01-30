@@ -1,9 +1,9 @@
 ---
+- name: Loading script for --> Securing SSH in servers
+  include_tasks: secure_ssh.yml
+
 - name: Set Timezones
   include_tasks: timezone.yml
 
 - name: Proxmox agent
   include_tasks: qemu_guest_agent.yml
-
-- name: zsh
-  include_tasks: zsh.yml

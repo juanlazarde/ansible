@@ -1,13 +1,19 @@
 ---
-- name: Automatic Updates
+- name: Loading script for --> Automatic Updates
   include_tasks: unattended_upgrades.yml
 
-- name: Add super user
+- name: Loading script for --> Super User addition
   include_tasks: super_user.yml
 
-- name: Disable/Lock root password
+- name: Loading script for --> Root lockout
   include_tasks: lock_root.yml
 
-- name: Add SSH keys
-  tags: development
-  include_tasks: ssh_key.yml
+- name: Loading --> Snap removal
+  import_tasks: purge_snap.yml
+
+- name: Loading --> LVM fix
+  import_tasks: lvm_fix.yml
+
+- name: Loading --> Assign hostname
+  import_tasks: assign_hostname.yml
+

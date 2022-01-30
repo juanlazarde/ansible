@@ -1,10 +1,5 @@
 ---
-- name: Install SSH key on server for {{sudo_user}}
-  tags: test
-  authorized_key:
-    user: "{{sudo_user}}"
-    key: "~/.ssh/{{ssh_key_profile}}-{{ssh_key_type}}.pub"
-    state: present
+
 # - name: Secure the SSH Service
 #   hosts: all
 #   tasks:
