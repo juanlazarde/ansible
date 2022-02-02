@@ -4,7 +4,7 @@
 
 # Homelab ansible script
 
-Scripts here help setup and update the workstation/client and the servers/hosts, with an agent-less package (nothing installed in the servers, all SSH'd).
+These scripts help setup and update your workstation and servers with an agent-less package, so nothing installed in the servers!
 
 These *playbooks* include *plays* such as:
 
@@ -24,7 +24,7 @@ These *playbooks* include *plays* such as:
     - installs and configures fail2ban to ban multiple login attempts
     ... for now
 
-These scripts are in an early stage, but work fine on my setup. Post your issues, and I'll try to help. I'm sharing this repository as a lot comes from developers on GitHub and other sources (like YouTube), and I'm trying to give back.
+These scripts are in an early stage, but work fine on my setup. Post your issues and I'll try to help. I'm sharing this repository as a lot comes from developers on GitHub and other sources (like YouTube) and I'm trying to give back.
 
 ## My setup
 - Bare metal rack server.
@@ -47,7 +47,7 @@ These scripts are in an early stage, but work fine on my setup. Post your issues
 # Install
 Download or copy and create an .sh file with the contents of `ansible_install.sh`. Run as:
 
-    $ sh ansible_install.sh
+    $ sh [ansible_install.sh](ansible_install.sh)
 
 This will download Ansible and its dependencies. It will also clone this repository.
 
