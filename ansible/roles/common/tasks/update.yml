@@ -1,0 +1,20 @@
+---
+- block:
+  - name: Update repositories cache (Ubuntu and Debian)
+    apt:
+      update_cache: true
+      cache_valid_time: 3600
+    
+  - name: Upgrade packages (Ubuntu and Debian)
+    apt:
+      upgrade: dist
+    register: upgrade
+    retries: 5
+    delay: 2
+    until: upgrade is success
+
+  - name: Cleanup packages (Ubuntu and Debian)
+    apt:
+      autoclean: true
+      autoremove: true
+  when: ansible_distribution in ["Ubuntu", "Debian"]

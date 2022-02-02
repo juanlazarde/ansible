@@ -12,5 +12,10 @@
         path: /etc/host
         insertafter: "# 127.0.1.1"
         line: "127.0.1.1    {{ my_name }}"
+        state: present
+    
+    - name: "[assign hostname] Set static hostname"
+      hostname:
+        name: "{{ my_name }}"
 
   when: my_name is defined and my_name != ""

@@ -1,0 +1,11 @@
+---
+- name: Ensure these packages are installed.
+  apt:
+    name:
+      - build-essential
+      - needrestart
+      # - pwgen
+      # - resolvconf
+      # - unbound
+      - unzip
+    state: latest

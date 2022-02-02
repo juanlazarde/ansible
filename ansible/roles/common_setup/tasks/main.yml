@@ -1,12 +1,12 @@
 ---
 - name: Loading script for --> Automatic Updates
-  include_tasks: unattended_upgrades.yml
+  import_tasks: unattended_upgrades.yml
 
 - name: Loading script for --> Super User addition
-  include_tasks: super_user.yml
+  import_tasks: super_user.yml
 
 - name: Loading script for --> Root lockout
-  include_tasks: lock_root.yml
+  import_tasks: lock_root.yml
 
 - name: Loading --> Snap removal
   import_tasks: purge_snap.yml
@@ -17,3 +17,9 @@
 - name: Loading --> Assign hostname
   import_tasks: assign_hostname.yml
 
+- name: Loading --> Firewall (ufw)
+  import_tasks: ufw.yml
+
+- name: Loading --> Fail2Ban
+  import_tasks: fail2ban.yml
+  

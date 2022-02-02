@@ -1,6 +1,0 @@
----
-- name: Common Update tasks
-  include_tasks: update.yml
-
-- name: Reboot after a full update and upgrade, if needed
-  include_tasks: reboot.yml

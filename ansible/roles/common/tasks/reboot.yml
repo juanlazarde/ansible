@@ -1,6 +1,6 @@
 - name: Check if a reboot is required
-  register: reboot_required
   stat: path=/var/run/reboot-required get_md5=no
+  register: reboot_required
 
 - name: Reboot
   # command: /sbin/reboot

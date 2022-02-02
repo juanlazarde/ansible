@@ -1,0 +1,8 @@
+---
+# References: https://www.vultr.com/docs/how-to-configure-a-new-ubuntu-server-with-ansible/
+
+- name: Common Update tasks
+  import_tasks: update.yml
+
+- name: Reboot after a full update and upgrade, if needed
+  import_tasks: reboot.yml

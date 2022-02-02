@@ -1,10 +1,12 @@
 ---
+- name: Loading --> Install essential packages
+  import_tasks: install_essential.yml
+
 - name: Create local SSH key pair
-  include_tasks: ssh_keypair.yml
+  import_tasks: ssh_keypair.yml
 
 - name: Loading --> zsh installation
   import_tasks: zsh.yml
 
 - name: Loading --> zsh-autosuggestions installation
   import_tasks: zsh-autosuggestions.yml
-
