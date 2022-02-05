@@ -2,6 +2,9 @@
 - name: Loading --> Install essential packages
   import_tasks: install_essential.yml
 
+- name: Loading --> Create ansible ssh key pair
+  import_tasks: ansible_ssh_key.yml
+
 - name: Create local SSH key pair
   import_tasks: ssh_keypair.yml
 
@@ -10,3 +13,7 @@
 
 - name: Loading --> zsh-autosuggestions installation
   import_tasks: zsh-autosuggestions.yml
+
+# - name: Loading --> unbound installation
+#   import_tasks: unbound_dns.yml
+#   tags: ["beta"]

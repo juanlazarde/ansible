@@ -1,0 +1,38 @@
+---
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   @file        :  playbook.yml
+#   @description :  initial setup for servers, workstations, virtual or not
+#   @usage       :  ansible-playbook playbook.yml \
+#                                    -i hosts.yml \
+#                                    --ask-become-pass \
+#                                    --vault-password-file ~/.vault_key \
+#                                    -l [all or servers or workstations or localhost or 192.168.0.133] \
+#                                    -t [setup or update or ssh or 'empty']
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# plays for remote hosts
+- name: SERVERS
+  hosts: servers
+  become: false
+  gather_facts: true
+  roles:
+  - role: common
+    tags: [ setup, update ]
+  - role: common_setup
+    tags: [ setup ]
+  - role: server_setup
+    tags: [ setup ]
+
+# plays for workstations and local machines
+- name: WORKSTATIONS
+  hosts: workstations
+  become: false
+  connection: local
+  gather_facts: false
+  roles:
+  - role: common
+    tags: [ setup, update ]
+  - role: common_setup
+    tags: [ setup ]
+  - role: workstation_setup
+    tags: [ setup ]

@@ -1,2 +1,1 @@
- clear
- ansible-playbook playbooks/workstation_setup.yml --vault-password-file ~/.vault_key -v -v --ask-become-pass -tags test
+ansible-playbook playbook.yml -i hosts.yml --ask-become-pass --vault-password-file ~/.vault_key -l "workstations" -t "setup" -C

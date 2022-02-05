@@ -1,1 +1,1 @@
- ansible-playbook -i inventories/development.yml playbooks/host_update.yml --ask-become-pass --vault-pass ~/.vault_key -C
+ansible-playbook playbook.yml -i hosts.yml --ask-become-pass --vault-password-file ~/.vault_key -l "servers" -t "update" -C

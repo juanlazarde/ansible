@@ -1,0 +1,15 @@
+---
+- vars:
+    the_ansible_name: "{{ the_ansible_ssh_filename | regex_replace('^.*(?<=\\/)(?P<name>.*)(?=\\.)', '\\name') }}"
+  name: "Set authorized key using SSH key from {{ the_ansible_ssh_filename }}"
+  authorized_key:
+    user: "{{ the_ansible_user }}"
+    state: present
+    key: "{{ lookup('file', '{{ the_ansible_ssh_filename }}') }}"
+
+- vars:
+    file_host: ~/.ssh/authorized_keys
+  name: "Keeping authorized keys sorted and unique"
+  shell: |
+    sort "{{ file_host }}" | uniq > "{{ file_host }}".uniq
+    cp "{{ file_host }}".uniq "{{ file_host }}"

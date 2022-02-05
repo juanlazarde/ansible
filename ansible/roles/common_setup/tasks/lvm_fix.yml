@@ -6,3 +6,10 @@
     lv: ubuntu-lv
     size: +100%FREE
     resizefs: true
+  when: ansible_distribution == "Ubuntu"
+  register: lvol_exists
+  ignore_errors: true
+
+- name: "[lvm fix] Manage if the volume doesn't exist"
+  debug: msg="{{ lvol_exists.msg }}"
+  when: lvol_exists.failed

@@ -6,6 +6,3 @@
 
 - name: Reconfigure Timezone Data
   command: dpkg-reconfigure -f noninteractive tzdata
-  sudo: true
-  when: timezone.changed
-  # consider: shell: dpkg-reconfigure -f noninteractive tzdata

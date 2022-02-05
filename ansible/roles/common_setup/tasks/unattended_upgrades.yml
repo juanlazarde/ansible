@@ -4,13 +4,9 @@
 - name: add distribution-specific variables
   include_vars: "{{ ansible_distribution }}.yml"
 
-- name: add Debian Wheezy workaround
+- name: add Debian Wheezy/Bullseye workaround
   include_vars: "{{ ansible_distribution }}-{{ ansible_distribution_release }}.yml"
-  when: (ansible_distribution == "Debian") and (ansible_distribution_release == "wheezy")
-
-- name: add Debian Bullseye workaround
-  include_vars: "{{ ansible_distribution }}-{{ ansible_distribution_release }}.yml"
-  when: (ansible_distribution == "Debian") and (ansible_distribution_release == "bullseye")
+  when: (ansible_distribution == "Debian") and (ansible_distribution_release == ["wheezy", "bullseye"])
 
 - name: Install unattended-upgrades
   package:
@@ -25,6 +21,7 @@
     owner: root
     group: root
     mode: 0644
+    backup: true
 
 - name: create unattended-upgrades configuration
   template:
@@ -33,3 +30,4 @@
     owner: root
     group: root
     mode: 0644
+    backup: true

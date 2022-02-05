@@ -1,28 +1,30 @@
 ---
-- name: "[firewall] Disable and reset ufw firewall to installation defaults."
-  ufw:
-    state: reset
+- become: true
+  block:
+  - name: "[firewall] Disable and reset ufw firewall to installation defaults."
+    ufw:
+      state: reset
 
-- name: "[firewall] Allow ssh port '{{ ssh_port }}'."
-  ufw:
-    rule: allow
-    proto: tcp
-    port: "{{ ssh_port }}"
+  - name: "[firewall] Allow ssh port '{{ ssh_port }}'."
+    ufw:
+      rule: allow
+      proto: tcp
+      port: "{{ ssh_port }}"
 
-- name: "[firewall] Block ping requests."
-  lineinfile:
-    name: /etc/ufw/before.rules
-    insertbefore: BOF
-    line: |
-      # Block ping requests
-      -A ufw-before-input -p icmp --icmp-type echo-request -j DROP
+  - name: "[firewall] Block ping requests."
+    lineinfile:
+      name: /etc/ufw/before.rules
+      insertbefore: BOF
+      line: |
+        # Block ping requests
+        -A ufw-before-input -p icmp --icmp-type echo-request -j DROP
 
-- name: "[firewall] Enable firewall for IPv6."
-  lineinfile:
-    name: ~/test
-    regexp: "^IPV6="
-    line: "IPV6=yes"
+  - name: "[firewall] Enable firewall for IPv6."
+    lineinfile:
+      name: /etc/ufw/before.rules
+      regexp: "^IPV6="
+      line: "IPV6=yes"
 
-- name: "[firewall] Enable firewall."
-  ufw:
-   state: enabled
+  - name: "[firewall] Enable firewall."
+    ufw:
+      state: enabled

@@ -1,9 +1,13 @@
 ---
-- name: Loading script for --> Securing SSH in servers
+- name: Loading --> Adding ansible ssh key to remote hosts.
+  import_tasks: ansible_ssh_key_server.yml
+  tags: ssh
+
+- name: Loading --> Securing SSH in servers
   import_tasks: secure_ssh.yml
 
-- name: Set Timezones
+- name: Loading --> Set Timezones
   import_tasks: timezone.yml
 
-- name: Proxmox agent
+- name: Loading --> Proxmox agent
   import_tasks: qemu_guest_agent.yml

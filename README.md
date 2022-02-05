@@ -26,6 +26,8 @@ These *playbooks* include *plays* such as:
 
 These scripts are in an early stage, but work fine on my setup. Post your issues and I'll try to help. I'm sharing this repository as a lot comes from developers on GitHub and other sources (like YouTube) and I'm trying to give back.
 
+**The code here, will not run out-of-the-box. You need to configure a couple of files listed below (ansible.cfg, hosts.yml).**
+
 ## My setup
 - Bare metal rack server.
 - Proxmox Hypervisor
@@ -35,40 +37,101 @@ These scripts are in an early stage, but work fine on my setup. Post your issues
 - Mostly using Ubuntu or light-weight debian/Ubuntu versions and Docker
 
 # Contents
-- `ansible_install.sh` bash to install ansible and clone this repository. **Start here**
+- `ansible_install.sh` bash to install ansible, clone this repository, install vault key, and encrypt secrets. **Start here**
 - `.\ansible` has ansible scripts, configs, playbooks, hosts, & roles.
 - `.\ansible\ansible.cfg` all of ansible's parameters. **If you've installed ansible, Start here**.
 - `.\ansible\hosts.yml` customize your hosts and variables here. (no global_vars or vars around). **Then here**
-- `.\ansible\server_*.yml` server, lazy bash scripts to speed up typing boring commands.
-- `.\ansible\workstation_*.yml` workstation, lazy bash scripts to speed up typing boring commands.
-- `.\ansible\test_*.yml` ansible plays for testing, verbose and no changes `--tags test -c -vvv`.
-- `~\.vault_key` this file is outside of the repository (of course!). Holds the keys to the castle. Wherever you see a `!vault |` and garbled text, this is what you need to encrypt/decrypt.
+- `.\ansible\playbook.yml` server & workstation plays.
+- `.\ansible\*.sh` lazy bash scripts to speed up typing boring commands.
+- `~\.vault_key` this file is outside of the repository (of course!). Holds the keys to the castle. Wherever you see a `!vault |` and garbled text, this is what you need to encrypt/decrypt. Use the `ansible_install.sh` to make this file super easy.
 
 # Install
-Download or copy and create an .sh file with the contents of `ansible_install.sh`. Run as:
+Download the installation script: `ansible_install.sh` by running this line:
+    
+    $ curl -LJO https://raw.githubusercontent.com/juanlazarde/ansible/main/ansible_install.sh
 
-    $ sh [ansible_install.sh](ansible_install.sh)
+**or** get  `ansible_install.sh` [here](ansible_install.sh) and save it as `ansible_install.sh`.
+ 
+ Run as:
 
-This will download Ansible and its dependencies. It will also clone this repository.
+    $ sh ansible_install.sh
+
+This script downloads Ansible with dependencies, installs this git repository locally, creates the vault key, and it helps encrypt information to be inserted to the host.yml.
+
+**OR**
+
+Clone the repository to your ansible-enabled host:
+
+    $ git clone https://github.com/juanlazarde/ansible ~/ansible_scripts
+    $ cd ansible_scripts
+
+and run the commands following the guide below.
+
+Make the most out of `ansible_install.sh`:
+
+    Syntax: sh ansible_install.sh [optional [-a] [-r] [-v] [-e] [-d <directory name>] [-h]]
+
+    Normal usage; without arguments, will install ansible, scripts, and vault key.
+
+    --ansible, -a    : don't install Ansible and its dependencies.
+    --repository, -r : don't download the repository with Ansible scripts from GitHub.
+    --vault, -v      : don't create a secret vault key
+    --encrypt, -e    : tool to create an ansible compatible hashed and encrypted variable.
+    -d directory name: directory where you want to install the Ansible scripts.
+    --help, -h       : help info
+
+## Configure the installation
+Edit the following files to meet your needs:
+
+    $ cd ansible_scripts
+    $ nano ansible.cfg
+    $ nano hosts.yml
+
+Remember to use the `sh ansible_install.sh -e` command to create encrypted variables, like passwords. To save them to files you can `sh ansible_install.sh -e > encrypted_text.txt`
+
+
+## Check connection to hosts
+Enter the following command to make sure ansible works and that you can connect to your hosts:
+    
+    $ ansible all -m ping
 
 # Supported platforms
 - Ubuntu 20.04 LTS
 - Windows WSL Ubuntu 20.04
 
 # Usage
-Go to the script's home directory:
+## First, workstation
+The script will update and install workstation-client related items. Including the creation of ansible ssh keys to be sent to the hosts.
 
-    $ cd ansible_scripts
+    $ sh workstation_setup.sh
 
-Running setup for the servers, where I'll make sudo-level changes, and decrypt with my key file.
+**or**
 
-    $ ansible-playbook -i hosts.yml playbooks/server_setup.yml --ask-become-pass --vault-password-file ~/.vault_key
+    ansible-playbook playbook.yml -i hosts.yml --ask-become-pass --vault-password-file ~/.vault_key -l "workstations" -t "setup"
 
-Running tests for my servers, where I'll need to have elevated priviledges (sudo-level, but no changes will be made), decypt with my key file, be on the no-change mode, and extra-extra verbose (to see what's going on under the hood), and will run only those tasks tagged with `-tags test`.
+## Then, deploy the ansible ssh keys to all servers-hosts.
 
-    $ ansible-playbook -i hosts.yml playbooks/server_setup.yml --ask-become-pass --vault-password-file ~/.vault_key --check -vvv --tags test
+    $ sh deploy_ansible_ssh.sh
 
-There're individual bash files with different command lines depending on server/workstation and update/setup.
+## Finally, setup all server-hosts.
+
+    ansible-playbook playbook.yml -i hosts.yml --ask-become-pass --vault-password-file ~/.vault_key -l "servers" -t "setup"
+
+**or**
+
+    $ sh server_setup.sh
+
+## Dry runs or checks without impact or changes to the system.
+You'll need to include the flag `-C` a the end of the ansible command.
+For extra verbose youll add `-vvv` to the command. i.e.
+
+    ansible-playbook playbook.yml -i hosts.yml --ask-become-pass --vault-password-file ~/.vault_key -l "workstations" -t "setup" -C -vvv
+
+
+# Tags and Limits
+To target workstations only, use the arguments `-l "workstation"`, for servers `-l "server"`.
+
+To run setups only, use `-t "setup"`, for updates `-t "update"`, for ssh deployment `-t "ssh"`
 
 # Ansible common commands
 ## Install:
@@ -138,7 +201,7 @@ Test connection:
 
 The issue tracker is the preferred channel for bug reports, features requests and submitting pull requests.
 
-Please maintain the existing coding style. Add unit tests and examples for any new or changed functionality, if possible.
+Please maintain the existing coding style. Add unit tests and examples for any new or changed functionality, if possible. Use the `.editorconfig` to maintain consistency.
 
 1. Fork it
 2. Create your feature branch (`git checkout -b my-new-feature`)
@@ -150,12 +213,13 @@ Please maintain the existing coding style. Add unit tests and examples for any n
 MIT
 
 # Thanks to...
+As they've inspired me to get into the homelab server world, tought me Linux, Ansible, setting everything up, and they don't even know it.
 - [Techno Tim](https://www.youtube.com/channel/UCOk-gHyjcWZNj3Br4oxwh0A)
-- [LeaenLinuxTV](https://www.youtube.com/channel/UCxQKHvKbmSzGMvUrVtJYnUA)
+- [LearnLinuxTV](https://www.youtube.com/channel/UCxQKHvKbmSzGMvUrVtJYnUA)
 
 # References
 - [Ansible Documentation](https://docs.ansible.com/index.html)
-- [RedHat - Using Encrypted info with Ansible](https://www.redhat.com/sysadmin/ansible-playbooks-secrets)
+- [Using Encrypted info with Ansible](https://www.redhat.com/sysadmin/ansible-playbooks-secrets)
 - [How Ansible works](https://www.ansible.com/overview/how-ansible-works)
-- [Ansible PLaybook Examples](https://www.middlewareinventory.com/blog/ansible-playbook-example/)
+- [Ansible Playbook Examples](https://www.middlewareinventory.com/blog/ansible-playbook-example/)
 - [Sample Ansible Setup](https://docs.ansible.com/ansible/latest/user_guide/sample_setup.html)

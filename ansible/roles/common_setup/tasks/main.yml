@@ -1,5 +1,5 @@
 ---
-- name: Loading script for --> Automatic Updates
+- name: Loading script for --> Unattended upgrades
   import_tasks: unattended_upgrades.yml
 
 - name: Loading script for --> Super User addition
