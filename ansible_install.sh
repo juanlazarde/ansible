@@ -4,7 +4,7 @@
 # Licensed under the MIT License
 #-----------------------------------------------
 #
-# Syntax: sh ansible_install.sh [optional [-a] [-r] [-v] [-e] [-d <directory name>] [-h]]
+# Syntax: bash ansible_install.sh [optional [-a] [-r] [-v] [-e] [-d <directory name>] [-h]]
 #
 # Normal usage; without arguments, will install ansible, scripts, and vault key.
 #
@@ -20,7 +20,7 @@
 #
 
 # Exit on error
-set -e
+# set -e
 
 # Define variables.
 # -----------------
@@ -36,6 +36,8 @@ INSTALL_VLT="true"
 DEFAULTVAULT=".vault_key2"
 # Encryption utility default
 UTIL_ENCRYPT="false"
+# Encrypted file with the variable just encrypted
+ENCRYPTED_FILE=""
 
 # Initialization
 # File directory
@@ -60,7 +62,7 @@ usage() {
 	echo
     echo "Usage without arguments, will install ansible, scripts, and vault key."
     echo
-	echo "Usage: sh $PROGNAME [optional [-a] [-r] [-v] [-d <directory name>] [-h]]"
+	echo "Usage: bash $PROGNAME [optional [-a] [-r] [-v] [-e] [-d <directory name>] [-h]]"
 	echo
 	echo "Optional arguments:"
 	echo
@@ -99,7 +101,7 @@ do
     -r|--repository)    INSTALL_REP="false";;
     -v|--vault)         INSTALL_VLT="false";;
     -d|--destination)   DESTINATION="$2";;
-    -e|--encrypt)       UTIL_ENCRYPT="true";;
+    -e|--encrypt)       UTIL_ENCRYPT="true"; ENCRYPTED_FILE="$2";;
     -*|--*)             echo "Invalid option '$1'. Use --help to see the valid options" >&2; exit 1;;
     *)                  break;;
   esac
@@ -112,7 +114,7 @@ if [ $INSTALL_ANS = "false" ] && [ $INSTALL_REP = "false" ] && [ $INSTALL_VLT = 
 fi
 
 if [ $UTIL_ENCRYPT = "true" ]; then
-    echo "Using -e, --encrypt option will disable all other options."
+    echo "Using [-e, --encrypt] option will disable all other options."
     INSTALL_ANS="false"
     INSTALL_REP="false"
     INSTALL_VLT="false"
@@ -153,13 +155,23 @@ installAnsible() {
     echo "Ansible and dependencies installed"
 }
 
+# Check if whois is installed. mkpasswd is part of the package
+checkPackage() {
+    dpkg -s $1 &> /dev/null
+    if [ $? -ne 0 ]; then
+        echo "I will need sudo priviledge to install $1."
+        sudo apt install -y $1
+        echo
+    fi
+}
+
 # Download the repository with Ansible scripts from GitHub.
 getAnsibleScripts() {
     echo
     echo "#####################################"
     echo "#      Getting ansible scripts      #"
     echo "#####################################"
-    sudo apt install -y git
+    checkPackage "git"
     git clone https://github.com/juanlazarde/ansible.git "$DESTINATION"
     echo
     echo "Ansible scripts installed in '$DESTINATION'"
@@ -172,8 +184,8 @@ createVault() {
     echo "#####################################"
     echo "#      Create secret vault key      #"
     echo "#####################################"
-    sudo apt install -y whois
     echo
+    checkPackage "whois"
     echo "Enter the secret password for the vault. It will be hashed."
     set -C  # don't overwrite file
 	mkpasswd -m sha-512 > $SECRETVAULT
@@ -198,11 +210,11 @@ nextSteps() {
     echo "4. Confirm connection to hosts:"
     echo "      $ ansible all -m ping"
     echo "5. Run workstation script:"
-    echo "      $ sh workstation_setup.sh"
-    echo "6. Run SSH with hosts"
-    echo "      $ sh deploy_ansible_ssh.sh"
+    echo "      $ bash workstation_setup.sh"
+    echo "6. Run SSH deployment to hosts"
+    echo "      $ bash deploy_ansible_ssh.sh"
     echo "7. Run remote host plays:"
-    echo "      $ sh sever_setup.sh"
+    echo "      $ bash sever_setup.sh"
     echo
 }
 
@@ -213,13 +225,31 @@ ansibleEncrypt() {
     echo "#   Encryption with Ansible vault   #"
     echo "#####################################"
     echo
-    echo "* Must have installed 'mkpasswd', 'ansible', and 'sed'"
+    echo "* Must have installed 'mkpasswd' part of the 'whois' pkg, 'ansible', and 'sed'"
     echo "* Encryption key location: $SECRETVAULT"
     echo "* If you want the output in a file, type:"
-    echo "      $ sh $PROGNAME -e > encrypted_text.txt"
+    echo "      $ bash $PROGNAME -e encrypted_text.txt"
     echo
-    echo "Enter your password here. It will be hashed and encrypted. Remember the password."
-    mkpasswd --method=sha-512 | ansible-vault encrypt --vault-password-file $SECRETVAULT | sed '/$ANSIBLE/i \!vault |'
+    # Check that mkpasswd is installed (part of whois)
+    checkPackage "whois"
+
+    # Check that the Ansible Vault key was created.
+    if [ -f "$SECRETVAULT" ]; then
+
+        # Password request, hashing and encrypting. Dependeing on existance of file name after '-e' it will save or show.
+        echo "Enter your password here. It will be hashed and encrypted. Remember the password."
+        if [ "$ENCRYPTED_FILE" = "" ]; then
+            mkpasswd --method=sha-512 | ansible-vault encrypt --vault-password-file $SECRETVAULT | sed '/$ANSIBLE/i \!vault |'
+        else
+            mkpasswd --method=sha-512 | ansible-vault encrypt --vault-password-file $SECRETVAULT | sed '/$ANSIBLE/i \!vault |' >> "$ENCRYPTED_FILE"
+            echo
+            echo "Saved encrypted text to $ENCRYPTED_FILE"
+        fi
+
+    else
+        echo "Sectret Ansible Vault key is not available (i.e. not created)."
+        echo "Run 'bash ansible_install -a -r'. This will create $SECRETVAULT"
+    fi
 }
 
 if [ $AT_LEAST_ONE = 'true' ]; then
@@ -249,5 +279,5 @@ if [ $AT_LEAST_ONE = 'true' ]; then
 fi
 
 if [ $UTIL_ENCRYPT = 'true' ]; then
-    ansibleEncrypt;
+    ansibleEncrypt
 fi
