@@ -2,18 +2,18 @@
 
 ---
 
-# Homelab ansible script
+# Ultimate Homelab with Ansible
 
-These scripts help setup and update your workstation and servers with an agent-less package, so nothing installed in the servers!
+These scripts help setup and update your workstation and servers with Ansible agent-less package, so nothing installed in the servers!
 
-These *playbooks* include *plays* such as:
+Ansible scripts are made of *playbooks*. These playbooks include *plays* such as:
 
-    - apt updating, upgrading, and rebooting (if needed)
-    - unattended-upgrade installation
-    - elevating admin user to super user level
-    - disabling root password
-    - creating SSH key pairs and updating remote hosts with the public key
-    - disabling remote root login
+    - updates and upgrades apt updating, reboots if needed
+    - installs unattended-upgrade package
+    - elevates admin user to super user level
+    - disables root password
+    - creates SSH key pairs and updates remote hosts with the public key
+    - disables remote root login
     - installs zsh, oh-my-zsh, with auto suggestions plugin. Sets as default shell
     - removes Ubuntu's snap services and leave-behinds
     - maximizes LVM partitions
@@ -24,9 +24,9 @@ These *playbooks* include *plays* such as:
     - installs and configures fail2ban to ban multiple login attempts
     ... for now
 
-These scripts are in an early stage, but work fine on my setup. Post your issues and I'll try to help. I'm sharing this repository as a lot comes from developers on GitHub and other sources (like YouTube) and I'm trying to give back.
+These scripts are in an early stage, but work fine on my setup. Post your issues and I'll try to help. I'm sharing this repository, as a lot comes from developers on GitHub and other sources (like YouTube) and I'm trying to give back. Most of the material is commented or self-explanatory.
 
-**The code here, will not run out-of-the-box. You need to configure a couple of files listed below (ansible.cfg, hosts.yml).**
+**The code here, will not run out-of-the-box**. You need to configure a couple of files listed below (ansible.cfg, hosts.yml).
 
 ## My setup
 - Bare metal rack server.
@@ -40,7 +40,7 @@ These scripts are in an early stage, but work fine on my setup. Post your issues
 - `ansible_install.sh` bash to install ansible, clone this repository, install vault key, and encrypt secrets. **Start here**
 - `.\ansible` has ansible scripts, configs, playbooks, hosts, & roles.
 - `.\ansible\ansible.cfg` all of ansible's parameters. **If you've installed ansible, Start here**.
-- `.\ansible\hosts.yml` customize your hosts and variables here. (no global_vars or vars around). **Then here**
+- `.\ansible\hosts.yml` customize your hosts and variables here. (no global_vars or vars around). **Then here.**
 - `.\ansible\playbook.yml` server & workstation plays.
 - `.\ansible\*.sh` lazy bash scripts to speed up typing boring commands.
 - `~\.vault_key` this file is outside of the repository (of course!). Holds the keys to the castle. Wherever you see a `!vault |` and garbled text, this is what you need to encrypt/decrypt. Use the `ansible_install.sh` to make this file super easy.
@@ -54,13 +54,15 @@ Download the installation script: `ansible_install.sh` by running this line:
  
  Run as:
 
-    $ sh ansible_install.sh
+    $ bash ansible_install.sh
 
 This script downloads Ansible with dependencies, installs this git repository locally, creates the vault key, and it helps encrypt information to be inserted to the host.yml.
 
+About the `bash` command. I've included it, because in some shells you'd need to change the ownership if you want to run it as `./ansible_install.sh`
+
 **OR**
 
-Clone the repository to your ansible-enabled host:
+Clone the repository to your ansible-enabled workstation:
 
     $ git clone https://github.com/juanlazarde/ansible ~/ansible_scripts
     $ cd ansible_scripts
@@ -69,16 +71,16 @@ and run the commands following the guide below.
 
 Make the most out of `ansible_install.sh`:
 
-    Syntax: sh ansible_install.sh [optional [-a] [-r] [-v] [-e] [-d <directory name>] [-h]]
+    Syntax: sh ansible_install.sh [optional [-a] [-r] [-v] [-e [<file name>]] [-d <directory name>] [-h]]
 
     Normal usage; without arguments, will install ansible, scripts, and vault key.
 
-    --ansible, -a    : don't install Ansible and its dependencies.
-    --repository, -r : don't download the repository with Ansible scripts from GitHub.
-    --vault, -v      : don't create a secret vault key
-    --encrypt, -e    : tool to create an ansible compatible hashed and encrypted variable.
+    --ansible, -a             : don't install Ansible and its dependencies.
+    --repository, -r          : don't download the repository with Ansible scripts from GitHub.
+    --vault, -v               : don't create a secret vault key
+    --encrypt, -e [<filename>]: tool to create a hashed ansible-encrypted variable. Optionally, save it as a file.
     -d directory name: directory where you want to install the Ansible scripts.
-    --help, -h       : help info
+    --help, -h                : help info
 
 ## Configure the installation
 Edit the following files to meet your needs:
@@ -87,7 +89,7 @@ Edit the following files to meet your needs:
     $ nano ansible.cfg
     $ nano hosts.yml
 
-Remember to use the `sh ansible_install.sh -e` command to create encrypted variables, like passwords. To save them to files you can `sh ansible_install.sh -e > encrypted_text.txt`
+Remember to use the `bassh ansible_install.sh -e` command to create encrypted variables, like passwords. To save them to files you can `bash ansible_install.sh -e encrypted_text.txt`
 
 
 ## Check connection to hosts
@@ -103,23 +105,31 @@ Enter the following command to make sure ansible works and that you can connect 
 ## First, workstation
 The script will update and install workstation-client related items. Including the creation of ansible ssh keys to be sent to the hosts.
 
-    $ sh workstation_setup.sh
+    $ bash workstation_setup.sh
 
 **or**
 
     ansible-playbook playbook.yml -i hosts.yml --ask-become-pass --vault-password-file ~/.vault_key -l "workstations" -t "setup"
 
-## Then, deploy the ansible ssh keys to all servers-hosts.
+Notice the following:
+1. `ask-become-pass` will request sudo password, which is needed for some plays.
+2. `--vault-password-file ~/.vault_key` is the secret file that helps decrypt `!vault` variables.
+3. `-l "workstations"` it limits the plays to be applied to the workstations defind in `host.yml`.
+4. `-t "setup"` it limits the plays to those tagged for setup.
 
-    $ sh deploy_ansible_ssh.sh
+## Then, deploy the ansible ssh keys to all servers-hosts.
+It's very helpful, recommended even, to create an 'ansible' SSH key pair in the workstation-client. Then Distribute the public key to all the hosts, and save it to the authorized key file. This way your ansible plays will establish a valid connection to each host, do their job, and get out.
+
+    $ bash deploy_ansible_ssh.sh
 
 ## Finally, setup all server-hosts.
+There are all the plays to be applied to the server group only. There are the remote hosts, like Apache, TrueNas, reverse-proxy, etc.
 
-    ansible-playbook playbook.yml -i hosts.yml --ask-become-pass --vault-password-file ~/.vault_key -l "servers" -t "setup"
+    $ bash server_setup.sh
 
 **or**
 
-    $ sh server_setup.sh
+    ansible-playbook playbook.yml -i hosts.yml --ask-become-pass --vault-password-file ~/.vault_key -l "servers" -t "setup"
 
 ## Dry runs or checks without impact or changes to the system.
 You'll need to include the flag `-C` a the end of the ansible command.
@@ -129,7 +139,7 @@ For extra verbose youll add `-vvv` to the command. i.e.
 
 
 # Tags and Limits
-To target workstations only, use the arguments `-l "workstation"`, for servers `-l "server"`.
+To target workstations only, use the arguments `-l "workstations"`, for servers `-l "servers"`.
 
 To run setups only, use `-t "setup"`, for updates `-t "update"`, for ssh deployment `-t "ssh"`
 
@@ -198,7 +208,6 @@ Test connection:
 	$ sudo ansible-pull --vault-password-file ~/.vault_key -U https://github.com/juanlazarde/ansible.git
 
 # Contributing
-
 The issue tracker is the preferred channel for bug reports, features requests and submitting pull requests.
 
 Please maintain the existing coding style. Add unit tests and examples for any new or changed functionality, if possible. Use the `.editorconfig` to maintain consistency.
@@ -212,10 +221,13 @@ Please maintain the existing coding style. Add unit tests and examples for any n
 # License
 MIT
 
+Ansible:registered: is a registered trademark of Red Hat Inc.
+
 # Thanks to...
-As they've inspired me to get into the homelab server world, tought me Linux, Ansible, setting everything up, and they don't even know it.
 - [Techno Tim](https://www.youtube.com/channel/UCOk-gHyjcWZNj3Br4oxwh0A)
 - [LearnLinuxTV](https://www.youtube.com/channel/UCxQKHvKbmSzGMvUrVtJYnUA)
+
+As they've inspired me to get into the homelab server world, tought me Linux, Ansible, setting everything up, and they don't even know it.
 
 # References
 - [Ansible Documentation](https://docs.ansible.com/index.html)

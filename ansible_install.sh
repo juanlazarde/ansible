@@ -4,16 +4,16 @@
 # Licensed under the MIT License
 #-----------------------------------------------
 #
-# Syntax: bash ansible_install.sh [optional [-a] [-r] [-v] [-e] [-d <directory name>] [-h]]
+# Syntax: bash ansible_install.sh [optional [-a] [-r] [-v] [-e [<filename>]] [-d <directory name>] [-h]]
 #
 # Normal usage; without arguments, will install ansible, scripts, and vault key.
 #
-# --ansible, -a    : don't install Ansible and its dependencies.
-# --repository, -r : don't download the repository with Ansible scripts from GitHub.
-# --vault, -v      : don't create a secret vault key
-# -d directory name: directory where you want to install the Ansible scripts.
-#                    DEFAULT: ansible_scripts
-# --encrypt, -e    : tool to create an ansible compatible hashed and encrypted variable.
+#     --ansible, -a             : don't install Ansible and its dependencies.
+#     --repository, -r          : don't download the repository with Ansible scripts from GitHub.
+#     --vault, -v               : don't create a secret vault key
+#     --encrypt, -e [<filename>]: tool to create a hashed ansible-encrypted variable. Optionally, save it as a file.
+#     -d directory name: directory where you want to install the Ansible scripts. Default: ansible_scripts.
+#     --help, -h                : help info
 #
 # More info:
 #    - https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#installing-ansible-on-ubuntu
@@ -33,7 +33,7 @@ DEFAULT_DEST="ansible_scripts"
 # Install the vault key
 INSTALL_VLT="true"
 # Secret vault: DO NOT SHARE THIS
-DEFAULTVAULT=".vault_key2"
+DEFAULTVAULT=".vault_key"
 # Encryption utility default
 UTIL_ENCRYPT="false"
 # Encrypted file with the variable just encrypted
@@ -86,9 +86,10 @@ usage() {
 	echo "      directory where you want to install the Ansible scripts."
     echo "      DEFAULT: $DESTINATION"
 	echo
-	echo "  -e, --encrypt"
+	echo "  -e, --encrypt <filename>"
 	echo "      tool to create an ansible compatible hashed and encrypted variable."
     echo "      DEFAULT: no"
+    echo "      <filename> is optional, and it will save the encrypted text to a file."
 
 }
 
