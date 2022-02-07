@@ -48,7 +48,7 @@ These scripts are in an early stage, but work fine on my setup. Post your issues
 # Install
 Download the installation script: `ansible_install.sh` by running this line:
     
-    $ curl -LJO https://raw.githubusercontent.com/juanlazarde/ansible/main/ansible_install.sh
+    $ curl -LJO https://raw.githubusercontent.com/juanlazarde/ansible_homelab/main/ansible_install.sh
 
 **or** get  `ansible_install.sh` [here](ansible_install.sh) and save it as `ansible_install.sh`.
  

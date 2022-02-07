@@ -173,7 +173,7 @@ getAnsibleScripts() {
     echo "#      Getting ansible scripts      #"
     echo "#####################################"
     checkPackage "git"
-    git clone https://github.com/juanlazarde/ansible.git "$DESTINATION"
+    git clone https://github.com/juanlazarde/ansible_homelab.git "$DESTINATION"
     echo
     echo "Ansible scripts installed in '$DESTINATION'"
     cd "$DESTINATION"
