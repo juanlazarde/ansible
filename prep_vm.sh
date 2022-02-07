@@ -22,7 +22,7 @@ echo "Create a symbolic link to machine id"
 ls -l /var/lib/dbus/machine-id || sudo ln -s /etc/machine-id /var/lib/dbus/machine-id
 
 echo "Clean up packages"
-(sudo apt clean; sudo apt autoremove) && sudo poweroff
+(sudo apt clean; sudo apt autoremove -y) && sudo poweroff
 
 echo "On Proxmox, the next steps are:"
 echo "[VM] -> Right click and Convert to Template. It will remove the current VM."
