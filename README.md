@@ -89,8 +89,33 @@ Edit the following files to meet your needs:
     $ nano ansible.cfg
     $ nano hosts.yml
 
-Remember to use the `bassh ansible_install.sh -e` command to create encrypted variables, like passwords. To save them to files you can `bash ansible_install.sh -e encrypted_text.txt`
+### Encryption
+Remember to use the `bash ansible_install.sh -e` command to create encrypted variables, like passwords. To save them to files you can `bash ansible_install.sh -e encrypted_text.txt`
 
+Now you'll need to copy this text and paste it to the `hosts.yml` file for example. When you can't copy/paste, here's a solution. Feel free to offer other ideas or request a better solution through the issue tracker:
+
+    $ sed -i.bak "/sudo_ssh_passphrase:/r encrypted_text.txt" ~/ansible_scripts/ansible/hosts.yml
+
+Explanation:
+* `sed` stream editor that filters and transforms text.
+* `-i.bak` creates a backup of the original file. In this case, `hosts.yml`
+* `/sudo_ssh_passphrase:` command to search for this string within the file. In this case, `hosts.yml`
+* ` /r encrypted_text.txt` reads the file `encrypted_text.txt`, which we created in the previous step.
+* `~/ansible_scripts/ansible/hosts.yml` this is the file being edited.
+
+The variables I've set to encrypted values in `hosts.yml`, are:
+* `sudo_ssh_passphrase`
+* `sudo_password`
+
+But, we'll need to edit it to adjust the proper YAML format. In example:
+
+        sudo_ssh_passphrase:!vault |
+            $ANSIBLE_VAULT;1.1;AES256
+            376563383...
+
+So,
+
+        $ nano hosts.yml
 
 ## Check connection to hosts
 Enter the following command to make sure ansible works and that you can connect to your hosts:
