@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-#-----------------------------------------------
-# Visit https://github.com/juanlazarde/ansible
+#-----------------------------------------------------
+# Visit https://github.com/juanlazarde/ansible_homelab
 # Licensed under the MIT License
-#-----------------------------------------------
+#-----------------------------------------------------
 #
 # Syntax: bash ansible_install.sh [optional [-a] [-r] [-v] [-e [<filename>]] [-d <directory name>] [-h]]
 #

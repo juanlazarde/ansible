@@ -71,7 +71,7 @@ and run the commands following the guide below.
 
 Make the most out of `ansible_install.sh`:
 
-    Syntax: sh ansible_install.sh [optional [-a] [-r] [-v] [-e [<file name>]] [-d <directory name>] [-h]]
+    Syntax: bash ansible_install.sh [optional [-a] [-r] [-v] [-e [<file name>]] [-d <directory name>] [-h]]
 
     Normal usage; without arguments, will install ansible, scripts, and vault key.
 
@@ -123,7 +123,7 @@ It's very helpful, recommended even, to create an 'ansible' SSH key pair in the 
     $ bash deploy_ansible_ssh.sh
 
 ## Finally, setup all server-hosts.
-There are all the plays to be applied to the server group only. There are the remote hosts, like Apache, TrueNas, reverse-proxy, etc.
+These are all the plays to be applied to the server group only. These are the remote hosts, like Apache, TrueNas, reverse-proxy, etc.
 
     $ bash server_setup.sh
 
@@ -189,7 +189,7 @@ Test connection:
 	$ sudo apt update && sudo apt install -y whois # to install mkpasswd
 	$ mkpasswd -m sha-512 > ~/.vault_key && chmod 600 ~/.vault_key
 	
-	Encrypt::
+	Encrypt:
 	$ ansible-vault encrypt --vault-password-file ~/.vault_key <filename>
 	
 	Decrypt:
@@ -206,6 +206,22 @@ Test connection:
 	
 	Download and execute from GIT
 	$ sudo ansible-pull --vault-password-file ~/.vault_key -U https://github.com/juanlazarde/ansible.git
+
+# Bonus - Prepare the VM
+When creating a VM template for i.e. Proxmox, it's recommended to prepare the current session. Here's a script that will help set some of these out.
+
+Download and run:
+
+    $ curl -LJO https://raw.githubusercontent.com/juanlazarde/ansible_homelab/main/prep_vm.sh
+    $ bash clear_vm.sh
+
+This will:
+
+1. Install cloud-init if it's not installed: `$ sudo apt install -y cloud-init`
+2. Remove SSH host keys: `	$ sudo rm /etc/ssh/ssh_host_*`
+3. If the machine identifier exists, then truncate it, usually in Unbuntu: `$ cat /etc/machine-id && sudo truncate -s 0 /etc/machine-id`
+4. Create a symbolic link: $ ls -l /var/lib/dbus/machine-id || sudo ln -s /etc/machine-id /var/lib/dbus/machine-id
+5. Clean up packages: `$ (sudo apt clean; sudo apt autoremove) && sudo poweroff`
 
 # Contributing
 The issue tracker is the preferred channel for bug reports, features requests and submitting pull requests.
