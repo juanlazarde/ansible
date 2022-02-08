@@ -1,6 +1,7 @@
 ---
 # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/user_module.html
 - name: Create a login user for "{{ sudo_user }}"
+  become: true
   no_log: true
   user:
     name: "{{ sudo_user }}"

@@ -2,6 +2,7 @@
 # Reference https://github.com/gantsign/ansible-role-oh-my-zsh
 
 - name: "[zsh & oh-my-zsh] Install dependencies zsh, git"
+  become: true
   apt:
     name: [zsh, git]
     state: present
@@ -12,6 +13,7 @@
     dest: ~/.zshrc.bak
 
 - name: "[zsh & oh-my-zsh] Set zsh as default shell"
+  become: true
   user:
     name: "{{sudo_user}}"
     shell: /bin/zsh

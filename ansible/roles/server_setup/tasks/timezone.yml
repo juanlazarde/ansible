@@ -1,5 +1,6 @@
 ---
 - name: Set timezone to "{{ timezone }}"
+  become: true
   timezone:
     name: "{{ timezone }}"
   notify: restart timezone dependent services

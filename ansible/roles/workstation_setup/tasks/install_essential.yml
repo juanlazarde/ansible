@@ -1,5 +1,6 @@
 ---
 - name: Ensure these packages are installed.
+  become: true
   apt:
     name:
       - build-essential

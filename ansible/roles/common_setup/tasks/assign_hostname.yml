@@ -1,5 +1,6 @@
 ---
 - name: "[assign hostname] Set a hostname"
+  become: true
   block:
     - name: "[assign hostname] Comment out current hostname"
       replace:

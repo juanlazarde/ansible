@@ -1,5 +1,6 @@
 ---
 - name: Install QEMU Guest Agent for Proxmox
+  become: true
   apt:
     name: qemu-guest-agent
     state: latest

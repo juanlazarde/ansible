@@ -44,6 +44,7 @@ These scripts are in an early stage, but work fine on my setup. Post your issues
 - `.\ansible\playbook.yml` server & workstation plays.
 - `.\ansible\*.sh` lazy bash scripts to speed up typing boring commands.
 - `~\.vault_key` this file is outside of the repository (of course!). Holds the keys to the castle. Wherever you see a `!vault |` and garbled text, this is what you need to encrypt/decrypt. Use the `ansible_install.sh` to make this file super easy.
+- `prep_vm.sh` helps prepare VM.
 
 # Install
 Download the installation script: `ansible_install.sh` by running this line:
@@ -64,7 +65,7 @@ About the `bash` command. I've included it, because in some shells you'd need to
 
 Clone the repository to your ansible-enabled workstation:
 
-    $ git clone https://github.com/juanlazarde/ansible ~/ansible_scripts
+    $ git clone https://github.com/juanlazarde/ansible-scripts ~/ansible_scripts
     $ cd ansible_scripts
 
 and run the commands following the guide below.
@@ -109,7 +110,7 @@ The variables I've set to encrypted values in `hosts.yml`, are:
 
 But, we'll need to edit it to adjust the proper YAML format. In example:
 
-        sudo_ssh_passphrase:!vault |
+        sudo_ssh_passphrase: !vault |
             $ANSIBLE_VAULT;1.1;AES256
             376563383...
 
@@ -141,6 +142,11 @@ Notice the following:
 2. `--vault-password-file ~/.vault_key` is the secret file that helps decrypt `!vault` variables.
 3. `-l "workstations"` it limits the plays to be applied to the workstations defind in `host.yml`.
 4. `-t "setup"` it limits the plays to those tagged for setup.
+
+Some ansible quirks:
+
+- `Sorry, try again`. May happen if you entered the wrong sudo password. Action -> Hit CTRL+C, run again.
+- `reboot` module is not executable for a local connection. Meaning, it won't reboot the workstation with the ansible agent. Action -> `sudo shutdown -r now`
 
 ## Then, deploy the ansible ssh keys to all servers-hosts.
 It's very helpful, recommended even, to create an 'ansible' SSH key pair in the workstation-client. Then Distribute the public key to all the hosts, and save it to the authorized key file. This way your ansible plays will establish a valid connection to each host, do their job, and get out.

@@ -1,5 +1,6 @@
 ---
 - name: Locking root password
+  become: true
   user:
     name: root
     password_lock: yes

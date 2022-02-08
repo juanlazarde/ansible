@@ -1,25 +1,24 @@
 ---
-- name: Loading script for --> Unattended upgrades
+- name: "Loading --> Unattended upgrades"
   import_tasks: unattended_upgrades.yml
 
-- name: Loading script for --> Super User addition
+- name: "Loading --> Super User addition"
   import_tasks: super_user.yml
 
-- name: Loading script for --> Root lockout
+- name: "Loading --> Root lockout"
   import_tasks: lock_root.yml
 
-- name: Loading --> Snap removal
+- name: "Loading --> Snap removal"
   import_tasks: purge_snap.yml
 
-- name: Loading --> LVM fix
+- name: "Loading --> LVM fix"
   import_tasks: lvm_fix.yml
 
-- name: Loading --> Assign hostname
+- name: "Loading --> Assign hostname"
   import_tasks: assign_hostname.yml
 
-- name: Loading --> Firewall (ufw)
+- name: "Loading --> Firewall (ufw)"
   import_tasks: ufw.yml
 
-- name: Loading --> Fail2Ban
+- name: "Loading --> Fail2Ban"
   import_tasks: fail2ban.yml
-  
