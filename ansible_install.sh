@@ -45,7 +45,9 @@ readonly SCRIPT_BASE="$(cd $(dirname '${BASH_SOURCE[0]}') && pwd)"
 # File name
 readonly PROGNAME=$(basename $0)
 
-SECRETVAULT="$SCRIPT_BASE/$DEFAULTVAULT"
+# SECRETVAULT="$SCRIPT_BASE/$DEFAULTVAULT"
+# SECRETVAULT="~/$DEFAULTVAULT"
+SECRETVAULT=$(eval echo "~/$DEFAULTVAULT")
 DESTINATION="$SCRIPT_BASE/$DEFAULT_DEST"
 
 # This is just cool info to have.
@@ -109,27 +111,28 @@ do
   shift
 done
 
+# User must enter at least one option. If the variables are changed to "false"
 if [ $INSTALL_ANS = "false" ] && [ $INSTALL_REP = "false" ] && [ $INSTALL_VLT = "false" ] && [ $UTIL_ENCRYPT = "false" ]; then
     echo "Invalid option. Use --help to see the valid options" >&2
     exit 1
 fi
 
+# If the '-e' option is selected, then all of the other options are ignored.
 if [ $UTIL_ENCRYPT = "true" ]; then
     echo "Using [-e, --encrypt] option will disable all other options."
     INSTALL_ANS="false"
     INSTALL_REP="false"
     INSTALL_VLT="false"
-fi
-
-AT_LEAST_ONE="false"
-if [ $INSTALL_ANS = 'true' ] || [ $INSTALL_REP = 'true' ] || [ $INSTALL_VLT = 'true' ]; then
-    AT_LEAST_ONE="true"
-fi
-
-# Check whether the directory already exists.
-if [ -d "$DESTINATION" ]; then
-    echo "Directory '$DESTINATION' exists. Try another."
-    exit 3
+else
+    AT_LEAST_ONE="false"
+    if [ $INSTALL_ANS = 'true' ] || [ $INSTALL_REP = 'true' ] || [ $INSTALL_VLT = 'true' ]; then
+        AT_LEAST_ONE="true"
+    fi
+    # Check whether the directory already exists.
+    if [ -d "$DESTINATION" ]; then
+        echo "Directory '$DESTINATION' exists. Try another."
+        exit 3
+    fi
 fi
 
 # Update apt repository of packages.
@@ -248,7 +251,7 @@ ansibleEncrypt() {
         fi
 
     else
-        echo "Sectret Ansible Vault key is not available (i.e. not created)."
+        echo "Secret Ansible Vault key is not available (i.e. not created)."
         echo "Run 'bash ansible_install -a -r'. This will create $SECRETVAULT"
     fi
 }
@@ -260,25 +263,40 @@ if [ $AT_LEAST_ONE = 'true' ]; then
     updatePackages
 fi
 
-if [ $INSTALL_ANS = 'true' ]; then
-    # echo "Install Ansible"
-    installAnsible
-fi
+# if [ $INSTALL_ANS = 'true' ]; then
+#     # echo "Install Ansible"
+#     installAnsible
+# fi
 
-if [ $INSTALL_REP = 'true' ]; then
-    # echo "Install Repository"
-    getAnsibleScripts
-fi
+# if [ $INSTALL_REP = 'true' ]; then
+#     # echo "Install Repository"
+#     getAnsibleScripts
+# fi
 
-if [ $INSTALL_VLT = 'true' ]; then
-    # echo "Install Vault"
-    createVault
-fi
+# if [ $INSTALL_VLT = 'true' ]; then
+#     # echo "Install Vault"
+#     createVault
+# fi
 
-if [ $AT_LEAST_ONE = 'true' ]; then
-    nextSteps
-fi
+# if [ $AT_LEAST_ONE = 'true' ]; then
+#     nextSteps
+# fi
 
-if [ $UTIL_ENCRYPT = 'true' ]; then
-    ansibleEncrypt
-fi
+# if [ $UTIL_ENCRYPT = 'true' ]; then
+#     ansibleEncrypt
+# fi
+
+# echo "Install Ansible"
+[ $INSTALL_ANS = 'true' ] && installAnsible
+
+# echo "Install Repository"
+[ $INSTALL_REP = 'true' ] && getAnsibleScripts
+
+# echo "Install Vault"
+[ $INSTALL_VLT = 'true' ] && createVault
+
+# next steps message
+[ $AT_LEAST_ONE = 'true' ] && nextSteps
+
+# encryption utility '-e' option
+[ $UTIL_ENCRYPT = 'true' ] && ansibleEncrypt
