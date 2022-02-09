@@ -21,6 +21,7 @@
 
 # Exit on error
 # set -e
+clear
 
 # Define variables.
 # -----------------
@@ -34,12 +35,17 @@ DEFAULT_DEST="ansible_scripts"
 INSTALL_VLT="true"
 # Secret vault: DO NOT SHARE THIS
 DEFAULTVAULT=".vault_key"
+DEFAULT_SALT_FILE=".vault_salt"
 # Encryption utility default
 UTIL_ENCRYPT="false"
 # Encrypted file with the variable just encrypted
 ENCRYPTED_FILE=""
+# Default salt Value
+SECRET_SALT='wpmlxaWO1Uhz9'
 
 # Initialization
+# User's home directory
+HOME_DIR=$(eval echo "~")
 # File directory
 readonly SCRIPT_BASE="$(cd $(dirname '${BASH_SOURCE[0]}') && pwd)"
 # File name
@@ -47,7 +53,8 @@ readonly PROGNAME=$(basename $0)
 
 # SECRETVAULT="$SCRIPT_BASE/$DEFAULTVAULT"
 # SECRETVAULT="~/$DEFAULTVAULT"
-SECRETVAULT=$(eval echo "~/$DEFAULTVAULT")
+SECRETVAULT="$HOME_DIR/$DEFAULTVAULT"
+SALT_FILE="$HOME_DIR/$DEFAULT_SALT_FILE"
 DESTINATION="$SCRIPT_BASE/$DEFAULT_DEST"
 
 # This is just cool info to have.
@@ -64,7 +71,7 @@ usage() {
 	echo
     echo "Usage without arguments, will install ansible, scripts, and vault key."
     echo
-	echo "Usage: bash $PROGNAME [optional [-a] [-r] [-v] [-e] [-d <directory name>] [-h]]"
+	echo "Usage: bash $PROGNAME [optional [-a] [-r] [-v] [-e [<filename>]] [-d <directory name>] [-h]]"
 	echo
 	echo "Optional arguments:"
 	echo
@@ -112,40 +119,48 @@ do
 done
 
 # User must enter at least one option. If the variables are changed to "false"
-if [ $INSTALL_ANS = "false" ] && [ $INSTALL_REP = "false" ] && [ $INSTALL_VLT = "false" ] && [ $UTIL_ENCRYPT = "false" ]; then
+if [[ $INSTALL_ANS = 'false' && $INSTALL_REP = 'false' && $INSTALL_VLT = 'false' && $UTIL_ENCRYPT = 'false' ]]; then
     echo "Invalid option. Use --help to see the valid options" >&2
     exit 1
 fi
 
+AT_LEAST_ONE="false"
+
 # If the '-e' option is selected, then all of the other options are ignored.
-if [ $UTIL_ENCRYPT = "true" ]; then
+if [ $UTIL_ENCRYPT = 'true' ]; then
     echo "Using [-e, --encrypt] option will disable all other options."
-    INSTALL_ANS="false"
-    INSTALL_REP="false"
-    INSTALL_VLT="false"
+    INSTALL_ANS='false'; INSTALL_REP='false'; INSTALL_VLT='false'
 else
-    AT_LEAST_ONE="false"
-    if [ $INSTALL_ANS = 'true' ] || [ $INSTALL_REP = 'true' ] || [ $INSTALL_VLT = 'true' ]; then
-        AT_LEAST_ONE="true"
-    fi
-    # Check whether the directory already exists.
-    if [ -d "$DESTINATION" ]; then
-        echo "Directory '$DESTINATION' exists. Try another."
-        exit 3
-    fi
+    [[ $INSTALL_ANS = 'true' || $INSTALL_REP = 'true' || $INSTALL_VLT = 'true' ]] && AT_LEAST_ONE='true'
+fi
+
+# Check whether the directory already exists.
+if [[ $INSTALL_REP = 'true' && -d "$DESTINATION" ]]; then
+    echo "Directory '$DESTINATION' exists. Try another."
+    exit 3
 fi
 
 # Update apt repository of packages.
 updatePackages() {
+    echo
     echo "#####################################"
     echo "#     Updating apt repositories     #"
     echo "#####################################"
-    echo "To install these packages, you'll need 'sudo' powers."
-    sudo apt update
+    echo
+    # sudo apt update
+    # This should skip updating if it has been less than a day.
+    if [ -z "$(find -H /var/lib/apt/lists -maxdepth 0 -mtime -1)" ]; then
+        echo "To install these packages, you'll need 'sudo' powers."
+        sudo apt update
+    else
+        echo "Repositories were updated less than a day ago."
+    fi
+    echo
 }
 
 # Install Ansible and dependencies.
 installAnsible() {
+    echo
     echo "#####################################"
     echo "# Installing Ansible & dependencies #"
     echo "#####################################"
@@ -156,13 +171,13 @@ installAnsible() {
     sudo apt install -y openssh-client
     sudo apt install -y sshpass
     echo
-    echo "Ansible and dependencies installed"
 }
 
-# Check if whois is installed. mkpasswd is part of the package
+# Check if whois is installed, as mkpasswd is part of the package
 checkPackage() {
     dpkg -s $1 &> /dev/null
     if [ $? -ne 0 ]; then
+        echo
         echo "I will need sudo priviledge to install $1."
         sudo apt install -y $1
         echo
@@ -179,7 +194,7 @@ getAnsibleScripts() {
     git clone https://github.com/juanlazarde/ansible_homelab.git "$DESTINATION"
     echo
     echo "Ansible scripts installed in '$DESTINATION'"
-    cd "$DESTINATION"
+    echo
 }
 
 # Create secret Ansible vault.
@@ -190,14 +205,21 @@ createVault() {
     echo "#####################################"
     echo
     checkPackage "whois"
-    echo "Enter the secret password for the vault. It will be hashed."
+    # Create salt, so that each installation has a unique password.
+    SECRET_SALT=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '')
     set -C  # don't overwrite file
-	mkpasswd -m sha-512 > $SECRETVAULT
+    echo $SECRET_SALT | tr -d '\n' > $SALT_FILE
+    chmod 600 $SALT_FILE
+    echo "Enter the secret password for the vault. It will be hashed."
+	mkpasswd --method=sha-512 --salt=$SECRET_SALT | tr -d '\n' > $SECRETVAULT
     chmod 600 $SECRETVAULT
     set +C
     echo
-    echo "Remember your password. Otherwise, delete the file and run this script again."
+    echo "Remember your password. Otherwise, delete the vault key file and run this script again."
+    echo "If you don't want to install ansible and the script, use options '-a -r' to skip."
     echo "Secret key stored here '$SECRETVAULT'"
+    echo "Secret salt stored here '$SALT_FILE'"
+    echo
 }
 
 # Suggestions for next steps.
@@ -211,13 +233,14 @@ nextSteps() {
     echo "      $ cd $DESTINATION"
     echo "2. Edit ansible.cfg"
     echo "3. Edit hosts.yml"
-    echo "4. Confirm connection to hosts:"
+    echo "4. Create hashed & encrypted variables with '$PROGNAME -e'"
+    echo "5. Confirm connection to hosts:"
     echo "      $ ansible all -m ping"
-    echo "5. Run workstation script:"
+    echo "6. Run workstation script:"
     echo "      $ bash workstation_setup.sh"
-    echo "6. Run SSH deployment to hosts"
+    echo "7. Run SSH deployment to hosts"
     echo "      $ bash deploy_ansible_ssh.sh"
-    echo "7. Run remote host plays:"
+    echo "8. Run remote host plays:"
     echo "      $ bash sever_setup.sh"
     echo
 }
@@ -231,60 +254,52 @@ ansibleEncrypt() {
     echo
     echo "* Must have installed 'mkpasswd' part of the 'whois' pkg, 'ansible', and 'sed'"
     echo "* Encryption key location: $SECRETVAULT"
+    echo "* Encryption salt location: $SALT_FILE"
     echo "* If you want the output in a file, type:"
     echo "      $ bash $PROGNAME -e encrypted_text.txt"
     echo
     # Check that mkpasswd is installed (part of whois)
     checkPackage "whois"
 
+    # Read the secret salt file if it was created (otherwise use the default, set above)
+    [[ -f "$SALT_FILE" ]] && SECRET_SALT=$(cat $SALT_FILE)
+
     # Check that the Ansible Vault key was created.
     if [ -f "$SECRETVAULT" ]; then
-
         # Password request, hashing and encrypting. Dependeing on existance of file name after '-e' it will save or show.
         echo "Enter your password here. It will be hashed and encrypted. Remember the password."
         if [ "$ENCRYPTED_FILE" = "" ]; then
-            mkpasswd --method=sha-512 | ansible-vault encrypt --vault-password-file $SECRETVAULT | sed '/$ANSIBLE/i \!vault |'
+            mkpasswd --method=sha-512 --salt=$SECRET_SALT | \
+            tr -d '\n' | \
+            ansible-vault encrypt --vault-password-file $SECRETVAULT | \
+            sed '/$ANSIBLE/i \!vault |'
         else
-            mkpasswd --method=sha-512 | ansible-vault encrypt --vault-password-file $SECRETVAULT | sed '/$ANSIBLE/i \!vault |' >> "$ENCRYPTED_FILE"
+            mkpasswd --method=sha-512 --salt=$SECRET_SALT | \
+            tr -d '\n' | \
+            ansible-vault encrypt --vault-password-file $SECRETVAULT | \
+            sed '/$ANSIBLE/i \!vault |' \
+            > "$ENCRYPTED_FILE"
             echo
             echo "Saved encrypted text to $ENCRYPTED_FILE"
         fi
+        # To Decrypt and check that everything is ok:
+        # ansible localhost -m ansible.builtin.debug -a var="test" -e "@test.yml" --vault-password-file ~/.vault_key
 
     else
+        echo
         echo "Secret Ansible Vault key is not available (i.e. not created)."
-        echo "Run 'bash ansible_install -a -r'. This will create $SECRETVAULT"
+        echo "Run 'bash $PROGNAME -a -r'. This will create $SECRETVAULT"
     fi
+    echo
 }
 
 if [ $AT_LEAST_ONE = 'true' ]; then
+    echo "-----------------------------------"
     echo "Let's install some ansible scripts."
     echo "-----------------------------------"
     echo
     updatePackages
 fi
-
-# if [ $INSTALL_ANS = 'true' ]; then
-#     # echo "Install Ansible"
-#     installAnsible
-# fi
-
-# if [ $INSTALL_REP = 'true' ]; then
-#     # echo "Install Repository"
-#     getAnsibleScripts
-# fi
-
-# if [ $INSTALL_VLT = 'true' ]; then
-#     # echo "Install Vault"
-#     createVault
-# fi
-
-# if [ $AT_LEAST_ONE = 'true' ]; then
-#     nextSteps
-# fi
-
-# if [ $UTIL_ENCRYPT = 'true' ]; then
-#     ansibleEncrypt
-# fi
 
 # echo "Install Ansible"
 [ $INSTALL_ANS = 'true' ] && installAnsible

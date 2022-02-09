@@ -49,13 +49,13 @@ These scripts are in an early stage, but work fine on my setup. Post your issues
 # Install
 Download the installation script: `ansible_install.sh` by running this line:
     
-    $ curl -LJO https://raw.githubusercontent.com/juanlazarde/ansible_homelab/main/ansible_install.sh
+    curl -LJO https://raw.githubusercontent.com/juanlazarde/ansible_homelab/main/ansible_install.sh
 
 **or** get  `ansible_install.sh` [here](ansible_install.sh) and save it as `ansible_install.sh`.
  
  Run as:
 
-    $ bash ansible_install.sh
+    bash ansible_install.sh
 
 This script downloads Ansible with dependencies, installs this git repository locally, creates the vault key, and it helps encrypt information to be inserted to the host.yml.
 
@@ -65,8 +65,8 @@ About the `bash` command. I've included it, because in some shells you'd need to
 
 Clone the repository to your ansible-enabled workstation:
 
-    $ git clone https://github.com/juanlazarde/ansible-scripts ~/ansible_scripts
-    $ cd ansible_scripts
+    git clone https://github.com/juanlazarde/ansible-scripts ~/ansible_scripts
+    cd ansible_scripts
 
 and run the commands following the guide below.
 
@@ -86,16 +86,18 @@ Make the most out of `ansible_install.sh`:
 ## Configure the installation
 Edit the following files to meet your needs:
 
-    $ cd ansible_scripts
-    $ nano ansible.cfg
-    $ nano hosts.yml
+    cd ansible_scripts
+    nano ansible.cfg
+    nano hosts.yml
 
 ### Encryption
-Remember to use the `bash ansible_install.sh -e` command to create encrypted variables, like passwords. To save them to files you can `bash ansible_install.sh -e encrypted_text.txt`
+Remember to use the `bash ansible_install.sh -e` command to create encrypted variables, like passwords. To save them to files you can:
+
+    bash ansible_install.sh -e encrypted_text.txt
 
 Now you'll need to copy this text and paste it to the `hosts.yml` file for example. When you can't copy/paste, here's a solution. Feel free to offer other ideas or request a better solution through the issue tracker:
 
-    $ sed -i.bak "/sudo_ssh_passphrase:/r encrypted_text.txt" ~/ansible_scripts/ansible/hosts.yml
+    sed -i.bak "/sudo_ssh_passphrase:/r encrypted_text.txt" ~/ansible_scripts/ansible/hosts.yml
 
 Explanation:
 * `sed` stream editor that filters and transforms text.
@@ -116,12 +118,16 @@ But, we'll need to edit it to adjust the proper YAML format. In example:
 
 So,
 
-        $ nano hosts.yml
+        nano hosts.yml
+
+Remember to delete the `encrypted_text.txt`:
+
+    rm encrypted_text.txt
 
 ## Check connection to hosts
 Enter the following command to make sure ansible works and that you can connect to your hosts:
     
-    $ ansible all -m ping
+    ansible all -m ping
 
 # Supported platforms
 - Ubuntu 20.04 LTS
@@ -131,7 +137,7 @@ Enter the following command to make sure ansible works and that you can connect 
 ## First, workstation
 The script will update and install workstation-client related items. Including the creation of ansible ssh keys to be sent to the hosts.
 
-    $ bash workstation_setup.sh
+    bash workstation_setup.sh
 
 **or**
 
@@ -151,12 +157,12 @@ Some ansible quirks:
 ## Then, deploy the ansible ssh keys to all servers-hosts.
 It's very helpful, recommended even, to create an 'ansible' SSH key pair in the workstation-client. Then Distribute the public key to all the hosts, and save it to the authorized key file. This way your ansible plays will establish a valid connection to each host, do their job, and get out.
 
-    $ bash deploy_ansible_ssh.sh
+    bash deploy_ansible_ssh.sh
 
 ## Finally, setup all server-hosts.
 These are all the plays to be applied to the server group only. These are the remote hosts, like Apache, TrueNas, reverse-proxy, etc.
 
-    $ bash server_setup.sh
+    bash server_setup.sh
 
 **or**
 
@@ -176,83 +182,83 @@ To run setups only, use `-t "setup"`, for updates `-t "update"`, for ssh deploym
 
 # Ansible common commands
 ## Install:
-	$ sudo apt update
-	$ sudo apt-add-repository --yes --update ppa:ansible/ansible
-	$ sudo apt install -y ansible software-properties-common sshpass openssh-server
+	sudo apt update
+	sudo apt-add-repository --yes --update ppa:ansible/ansible
+	sudo apt install -y ansible software-properties-common sshpass openssh-server
 
 Create SSH key and profile:
 
-    Create the SSH Key pair. Never share the private one (wihout extension).
-    $ ssh-keygen -t ed25519 -C "Ansible" -f ~/.ssh/ansible -q -N ""
+    # Create the SSH Key pair. Never share the private one (wihout extension).
+    ssh-keygen -t ed25519 -C "Ansible" -f ~/.ssh/ansible -q -N ""
     
-    Add Public SSH key to authorized_keys in the host.
-    $ ssh-copy-id -i ~/.ssh/ansible.pub <remote_IP>
+    # Add Public SSH key to authorized_keys in the host.
+    ssh-copy-id -i ~/.ssh/ansible.pub <remote_IP>
 
-    (optional) Minimizes entering SSH password during a session.
-    $ eval $(ssh-agent) && ssh-add
+    # (optional) Minimizes entering SSH password during a session.
+    eval $(ssh-agent) && ssh-add
 
-    (optional, optional) Add the command above as an alias: ssha.
-    $ echo ""alias ssha='eval $(ssh-agent -s) && ssh-add ~/.ssh/ansible'"" >> ~/.zshrc >> ~/.bashrc
+    # (optional, optional) Add the command above as an alias: ssha.
+    echo ""alias ssha='eval $(ssh-agent -s) && ssh-add ~/.ssh/ansible'"" >> ~/.zshrc >> ~/.bashrc
 
 
 Test connection:
 
-    $ ansible -i hosts <remote_IP> -m ping --user <user> --ask-pass -o
-	or
-	$ ansible -i hosts ubuntu -m ping --key-file ~/.ssh/ansible -o
+    ansible -i hosts <remote_IP> -m ping --user <user> --ask-pass -o
+	# or
+	ansible -i hosts ubuntu -m ping --key-file ~/.ssh/ansible -o
 	
 ## Usage
-	Gather hosts info
-	$ ansible all -m gather_facts
+	# Gather hosts info
+	ansible all -m gather_facts
 	
-	Send a command to all hosts
-	$ ansible all -m apt -a name=vim-nox --become --ask-become-pass
+	# Send a command to all hosts
+	ansible all -m apt -a name=vim-nox --become --ask-become-pass
 	
-	Automate items in playbook to all hosts
-	$ ansible-playbook -i hosts playbooks/upgrade_apt.yml \
+	# Automate items in playbook to all hosts
+	ansible-playbook -i hosts playbooks/upgrade_apt.yml \
 	--user someuser --ask-pass --ask-become-pass
-	or
-	$ ansible-playbook playbooks/upgrade_apt.yml --ask-become-pass
+	# or
+	ansible-playbook playbooks/upgrade_apt.yml --ask-become-pass
 	
-	-----------------------------
-    --> Encrypting with Vault <--
-    -----------------------------
-	$ sudo apt update && sudo apt install -y whois # to install mkpasswd
-	$ mkpasswd -m sha-512 > ~/.vault_key && chmod 600 ~/.vault_key
+	# -----------------------------
+    # --> Encrypting with Vault <--
+    # -----------------------------
+	sudo apt update && sudo apt install -y whois # to install mkpasswd
+	mkpasswd -m sha-512 > ~/.vault_key && chmod 600 ~/.vault_key
 	
-	Encrypt:
-	$ ansible-vault encrypt --vault-password-file ~/.vault_key <filename>
+	# Encrypt:
+	ansible-vault encrypt --vault-password-file ~/.vault_key <filename>
 	
-	Decrypt:
-	$ ansible-vault decrypt --vault-password-file ~/.vault_key <filename>
+	# Decrypt:
+	ansible-vault decrypt --vault-password-file ~/.vault_key <filename>
 	
-	Edit:
-	$ ansible-vault edit --vault-password-file ~/.vault_key <filename>
+	# Edit:
+	ansible-vault edit --vault-password-file ~/.vault_key <filename>
 	
-	Using ansible playbook with vault:
-	$ ansible-playbook site.yml --ask-become-pass --vault-password-file ~/.vault_key
+	# Using ansible playbook with vault:
+	ansible-playbook site.yml --ask-become-pass --vault-password-file ~/.vault_key
 	
-	Create an encrypted and hashed password variable
-	$ mkpasswd --method=sha-512 --salt=1234asdf | ansible-vault encrypt --vault-password-file ~/.vault_key | sed '/$ANSIBLE/i \!vault |'
+	# Create an encrypted and hashed password variable
+	mkpasswd --method=sha-512 --salt=1234asdf | ansible-vault encrypt --vault-password-file ~/.vault_key | sed '/$ANSIBLE/i \!vault |'
 	
-	Download and execute from GIT
-	$ sudo ansible-pull --vault-password-file ~/.vault_key -U https://github.com/juanlazarde/ansible.git
+	# Download and execute from GIT
+	sudo ansible-pull --vault-password-file ~/.vault_key -U https://github.com/juanlazarde/ansible.git
 
 # Bonus - Prepare the VM
 When creating a VM template for i.e. Proxmox, it's recommended to prepare the current session. Here's a script that will help set some of these out.
 
 Download and run:
 
-    $ curl -LJO https://raw.githubusercontent.com/juanlazarde/ansible_homelab/main/prep_vm.sh
-    $ bash clear_vm.sh
+    curl -LJO https://raw.githubusercontent.com/juanlazarde/ansible_homelab/main/prep_vm.sh
+    bash clear_vm.sh
 
 This will:
 
-1. Install cloud-init if it's not installed: `$ sudo apt install -y cloud-init`
-2. Remove SSH host keys: `	$ sudo rm /etc/ssh/ssh_host_*`
-3. If the machine identifier exists, then truncate it, usually in Unbuntu: `$ cat /etc/machine-id && sudo truncate -s 0 /etc/machine-id`
-4. Create a symbolic link: $ ls -l /var/lib/dbus/machine-id || sudo ln -s /etc/machine-id /var/lib/dbus/machine-id
-5. Clean up packages: `$ (sudo apt clean; sudo apt autoremove) && sudo poweroff`
+1. Install cloud-init if it's not installed: `sudo apt install -y cloud-init`
+2. Remove SSH host keys: `	sudo rm /etc/ssh/ssh_host_*`
+3. If the machine identifier exists, then truncate it, usually in Unbuntu: `cat /etc/machine-id && sudo truncate -s 0 /etc/machine-id`
+4. Create a symbolic link: ls -l /var/lib/dbus/machine-id || sudo ln -s /etc/machine-id /var/lib/dbus/machine-id
+5. Clean up packages: `(sudo apt clean; sudo apt autoremove) && sudo poweroff`
 
 # Contributing
 The issue tracker is the preferred channel for bug reports, features requests and submitting pull requests.

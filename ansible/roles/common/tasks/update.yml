@@ -1,12 +1,13 @@
 ---
-- become: true
+- name: "Update | Will update only if OS: Ubuntu, Debian"
+  become: true
   block:
-  - name: Update repositories cache (Ubuntu and Debian)
+  - name: "Update |  Update repositories"
     apt:
       update_cache: true
       cache_valid_time: 3600
-    
-  - name: Upgrade packages (Ubuntu and Debian)
+
+  - name: "Update | Upgrade packages"
     apt:
       upgrade: dist
     register: upgrade
@@ -14,9 +15,9 @@
     delay: 2
     until: upgrade is success
 
-  - name: Cleanup packages (Ubuntu and Debian)
+  - name: "Update | Cleanup packages"
     apt:
       autoclean: true
       autoremove: true
-      
+
   when: ansible_distribution in ["Ubuntu", "Debian"]

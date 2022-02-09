@@ -19,24 +19,24 @@
 
   become: true
   block:
-    - name: "[fail2ban] Insall fail2ban"
-      apt:
+    - name: "fail2ban | install"
+      package:
         name: fail2ban
         state: present
 
-    - name: "[fail2ban] Copying fail2ban.conf to .local settings."
+    - name: "fail2ban | fail2ban.conf to .local backup"
       copy:
         src: /etc/fail2ban/fail2ban.conf
         dest: /etc/fail2ban/fail2ban.local
 
-    - name: "[fail2ban] Edit fail2ban.local settings: ignoreIP."
+    - name: "fail2ban | edit ignoreIP in fail2ban.local"
       lineinfile:
         path: /etc/fail2ban/fail2ban.local
         regexp: "^\\[DEFAULT\\]"
         line: "{{ f2b_fail2ban_local_default_edits }}"
         state: present
 
-    - name: "[fail2ban] Edit fail2ban.local settings."
+    - name: "fail2ban | edit logs in fail2ban.local"
       lineinfile:
         path: /etc/fail2ban/fail2ban.local
         regexp: "{{ item.from }}"
@@ -46,19 +46,19 @@
         - { from: "^loglevel", to: "loglevel = INFO"}
         - { from: "^logtarget", to: "logtarget = /var/log/fail2ban.log"}
 
-    - name: "[fail2ban] Copying jail.conf to .local settings."
+    - name: "fail2ban | jail.conf to .local backup"
       copy:
         src: /etc/fail2ban/jail.conf
         dest: /etc/fail2ban/jail.local
 
-    - name: "[fail2ban] Edit jail.local settings: Comment out."
+    - name: "fail2ban | edit comments in jail.local"
       replace:
         path: /etc/fail2ban/jail.local
         regexp: "(^\\[sshd\\][\\s\\S]*?)({{ item }})"
         replace: "\\1#{{ item }}"
       with_items: "{{ f2b_jail_local_sshd_commented }}"
 
-    - name: "[fail2ban] Edit jail.local settings: Edits."
+    - name: "fail2ban | edit sshd in jail.local"
       lineinfile:
         path: /etc/fail2ban/jail.local
         regexp: "^\\[sshd\\]"
@@ -66,7 +66,7 @@
         state: present
       notify: restart fail2ban
 
-    - name: "[fail2ban] Start fail2ban and ensure it starts on a fresh reboot."
+    - name: "fail2ban | start fail2ban and ensure it starts on a fresh reboot."
       service:
         name: fail2ban
         state: started
@@ -74,6 +74,6 @@
       register: error_handler
       ignore_errors: true
 
-    - name: "[fail2ban] Handling errors"
+    - name: "fail2ban | Handling errors"
       debug: msg="{{ error_handler.msg }}"
       when: error_handler.failed
