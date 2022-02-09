@@ -1,63 +1,63 @@
 ---
 - become: true
   block:
-  - name: "firewall | install ufw"
-    package:
-      name: ufw
-      state: present
+    - name: "firewall | install ufw"
+      package:
+        name: ufw
+        state: present
 
-  - name: "firewall | reset"
-    ufw:
-      state: reset
+    - name: "firewall | reset"
+      ufw:
+        state: reset
 
-  # - name: "firewall | allow ovh ping"
-  #   lineinfile:
-  #     dest: /etc/ufw/before.rules
-  #     regexp: "{{ item }}"
-  #     line: "-A ufw-before-input -p icmp -s {{ item }} -j ACCEPT"
-  #     insertafter: "^# ok icmp codes"
-  #     backup: yes
-  #   with_items: ovh_hosts
+    # - name: "firewall | allow ovh ping"
+    #   lineinfile:
+    #     dest: /etc/ufw/before.rules
+    #     regexp: "{{ item }}"
+    #     line: "-A ufw-before-input -p icmp -s {{ item }} -j ACCEPT"
+    #     insertafter: "^# ok icmp codes"
+    #     backup: yes
+    #   with_items: ovh_hosts
 
-  - name: "firewall | disable ping"
-    lineinfile:
-      dest: /etc/ufw/before.rules
-      regexp: "^[^#]*?ufw-before-input.*--icmp-type {{ item }}"
-      line: "-A ufw-before-input -p icmp --icmp-type {{ item }} -j DROP"
-      backup: yes
-    with_items:
-      - destination-unreachable
-      - source-quench
-      - time-exceeded
-      - parameter-problem
-      - echo-request
+    - name: "firewall | disable ping"
+      lineinfile:
+        dest: /etc/ufw/before.rules
+        regexp: "^[^#]*?ufw-before-input.*--icmp-type {{ item }}"
+        line: "-A ufw-before-input -p icmp --icmp-type {{ item }} -j DROP"
+        backup: yes
+      with_items:
+        - destination-unreachable
+        - time-exceeded
+        - parameter-problem
+        - echo-request
+        # - source-quench
 
-  - name: "firewall | disable ipv6 ping"
-    lineinfile: 
-      dest: /etc/ufw/before6.rules
-      regexp: "^[^#]*?ufw6-before-input.*--icmpv6-type {{ item }}"
-      line: "-A ufw6-before-input -p icmpv6 --icmpv6-type {{ item }} -j DROP"
-      backup: true
-    with_items:
-      - destination-unreachable
-      - packet-too-big
-      - time-exceeded
-      - parameter-problem
-      - echo-request
-  
-  - name: "firewall | IPv6"
-    lineinfile:
-      name: /etc/default/ufw
-      regexp: "^IPV6="
-      line: "IPV6=yes"
-      backup: true
+    - name: "firewall | disable ipv6 ping"
+      lineinfile:
+        dest: /etc/ufw/before6.rules
+        regexp: "^[^#]*?ufw6-before-input.*--icmpv6-type {{ item }}"
+        line: "-A ufw6-before-input -p icmpv6 --icmpv6-type {{ item }} -j DROP"
+        backup: true
+      with_items:
+        - destination-unreachable
+        - packet-too-big
+        - time-exceeded
+        - parameter-problem
+        - echo-request
 
-  - name: "firewall | allow port '{{ ssh_port }}'"
-    ufw:
-      rule: allow
-      proto: tcp
-      port: "{{ ssh_port }}"
+    - name: "firewall | IPv6"
+      lineinfile:
+        name: /etc/default/ufw
+        regexp: "^IPV6="
+        line: "IPV6=yes"
+        backup: true
 
-  - name: "firewall | enable firewall"
-    ufw:
-      state: enabled
+    - name: "firewall | allow port '{{ ssh_port }}'"
+      ufw:
+        rule: allow
+        proto: tcp
+        port: "{{ ssh_port }}"
+
+    - name: "firewall | enable firewall"
+      ufw:
+        state: enabled
