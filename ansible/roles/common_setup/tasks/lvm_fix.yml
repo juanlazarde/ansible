@@ -1,6 +1,6 @@
 ---
 - become: true
-  name: "[lvm fix] Extend the logical volume to consume all remaining space in the volume group"
+  name: "lvm fix | extend logical volume to consume all remaining space in the volume group"
   lvol:
     vg: ubuntu-vg
     lv: ubuntu-lv
@@ -10,6 +10,6 @@
   register: lvol_exists
   ignore_errors: true
 
-- name: "[lvm fix] Manage if the volume doesn't exist"
+- name: "lvm fix | manage if no volume"
   debug: msg="{{ lvol_exists.msg }}"
   when: lvol_exists.failed

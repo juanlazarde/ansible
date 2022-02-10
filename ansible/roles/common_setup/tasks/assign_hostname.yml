@@ -1,27 +1,27 @@
 ---
-- name: "[assign hostname] Set a hostname"
+- name: "assign hostname | Set a hostname"
   become: true
   block:
-    - name: "[assign hostname] Comment out current hostname"
+    - name: "assign hostname | comment current"
       replace:
         path: /etc/hosts
         regexp: "(^127\\.0\\.1\\.1.*)"
         replace: "# \\1"
 
-    - name: "[assign hostname] Add hostname to 127.0.1.1"
+    - name: "assign hostname | add hostname to 127.0.1.1"
       lineinfile:
         path: /etc/hosts
         insertafter: "# 127.0.1.1"
         line: "127.0.1.1    {{ my_name }}"
         state: present
 
-    - name: "[assign hostname] Set static hostname"
+    - name: "assign hostname | static hostname"
       hostname:
         name: "{{ my_name }}"
       register: error_handler
       ignore_errors: true
 
-    - name: "[assign hostname] Handling hostname errors"
+    - name: "assign hostname | errors"
       debug: msg="{{ error_handler.msg }}"
       when: error_handler.failed
 

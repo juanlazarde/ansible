@@ -1,7 +1,8 @@
 ---
 - vars:
-    the_ansible_name: "{{ the_ansible_ssh_filename | regex_replace('^.*(?<=\\/)(?P<name>.*)(?=\\.)', '\\name') }}"
-  name: "Generate SSH key for profile '{{ the_ansible_name }}'"
+    # exctract name of profile from variable definition, which is in a directory format
+    the_ansible_name: "{{ the_ansible_ssh_filename | regex_replace('^.*(?<=\\/)(?P<name>.*)(?=\\.)', '\\g<name>') }}"
+  name: "ansible ssh key | generate SSH key for '{{ the_ansible_name }}'"
   user:
     name: "{{ the_ansible_name }}"
     generate_ssh_key: yes
@@ -12,7 +13,7 @@
 
 - vars:
     file_host: ~/.ssh/known_hosts
-  name: "Keeping authorized keys sorted and unique"
+  name: "ansible ssh key | Keeping authorized keys sorted and unique"
   shell: |
     sort "{{ file_host }}" | uniq > "{{ file_host }}".uniq
     cp "{{ file_host }}".uniq "{{ file_host }}"

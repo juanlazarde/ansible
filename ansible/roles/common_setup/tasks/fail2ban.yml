@@ -77,3 +77,9 @@
     - name: "fail2ban | Handling errors"
       debug: msg="{{ error_handler.msg }}"
       when: error_handler.failed
+
+  handlers:
+  - name: restart fail2ban
+    service:
+      name: fail2ban
+      state: restarted

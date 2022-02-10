@@ -15,14 +15,14 @@
 
   become: true
   block:
-    - name: "[remove snap] Shutdown services, sockets and timers"
+    - name: "remove snap | Shutdown services, sockets and timers"
       service:
         name: snapd
         state: stopped
         enabled: false
       failed_when: false
 
-    - name: "[remove snap] Remove snapd packages"
+    - name: "remove snap | Remove snapd packages"
       apt:
         name: snapd
         state: absent
@@ -30,13 +30,13 @@
         autoremove: true
         autoclean: true
 
-    - name: "[remove snap] Block future installations of snapd"
+    - name: "remove snap | Block future installations of snapd"
       template:
         src: purge_snap.j2
         dest: /etc/apt/preferences.d/snapd.pref
         mode: 0644
 
-    - name: "[remove snap] Remove snapd-related directories"
+    - name: "remove snap | Remove snapd-related directories"
       file:
         path: "{{ item }}"
         state: absent

@@ -1,13 +1,13 @@
 ---
-- name: "Update | Will update only if OS: Ubuntu, Debian"
+- name: "update | Will update only if OS: Ubuntu, Debian"
   become: true
   block:
-  - name: "Update |  Update repositories"
+  - name: "update | update repositories"
     apt:
       update_cache: true
       cache_valid_time: 3600
 
-  - name: "Update | Upgrade packages"
+  - name: "update | Upgrade packages"
     apt:
       upgrade: dist
     register: upgrade
@@ -15,7 +15,7 @@
     delay: 2
     until: upgrade is success
 
-  - name: "Update | Cleanup packages"
+  - name: "update | Cleanup packages"
     apt:
       autoclean: true
       autoremove: true

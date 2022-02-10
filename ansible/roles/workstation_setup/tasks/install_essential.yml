@@ -1,7 +1,7 @@
 ---
-- name: Ensure these packages are installed.
+- name: "install essential | install"
   become: true
-  apt:
+  package:
     name:
       - build-essential
       - needrestart

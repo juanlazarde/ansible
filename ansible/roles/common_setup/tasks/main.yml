@@ -9,7 +9,7 @@
   import_tasks: lock_root.yml
 
 - name: "Loading --> Snap removal"
-  import_tasks: purge_snap.yml
+  import_tasks: remove_snap.yml
 
 - name: "Loading --> LVM fix"
   import_tasks: lvm_fix.yml
