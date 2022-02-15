@@ -1,27 +1,28 @@
 ---
-- name: Generate SSH key for user {{ sudo_user }}
+- name: "ssh keypair | create"
+  become: true
   user:
     name: "{{ sudo_user }}"
     generate_ssh_key: yes
     ssh_key_type: "{{ ssh_key_type }}"
     ssh_key_passphrase: "{{ sudo_ssh_passphrase }}"
-    ssh_key_file: "{{ ssh_filename }}"
+    ssh_key_file: ".ssh/{{ ssh_filename }}"
     ssh_key_comment: "{{ ssh_filename }} key"
-  # shell:
-  #   cmd: ssh-keygen -q -t {{ ssh_key_type }} -N "{{ sudo_ssh_passphrase }}" -f "{{ ssh_filename }}" -C "{{ ssh_filename }} key"
-  #   creates: "{{ ssh_filename }}"
 
-- name: Set alias 'ssha' for frequent SSH logins w/o password
-  vars:
-    ssh_filename_private: "{{  ssh_filename | regex_replace('(.*)(\\.[^.]+)$', '\\1')  }}"
-  blockinfile:
-    path: "{{ item }}"
-    block: |
+# - name: "ssh keypair | 'ssha' alias for frequent SSH logins w/o password"
+#   become: true
+#   blockinfile:
+#     path: "{{ item }}"
+#     create: true
+#     owner: "{{ sudo_user }}"
+#     group: "{{ sudo_user }}"
+#     mode: 0644
+#     block: |
 
-      # Alias to request SSH password only once per session
-      alias ssha='eval $(ssh-agent -s) && ssh-add {{ ssh_filename_private }}'
-  with_items:
-    - "~/.bashrc"
-    - "~/.zshrc"
-# shell:
-#   cmd: echo ""alias ssha='eval $(ssh-agent -s) && ssh-add {{ ssh_filename_private }}'"" >> ~/.zshrc >> ~/.bashrc
+#       # Alias to request SSH password only once per session
+#       alias ssha='eval $(ssh-agent -s) && ssh-add ~/.ssh/{{ ssh_filename }}'
+#   with_items:
+#     - "/home/{{ sudo_user }}/.bashrc"
+#     - "/home/{{ sudo_user }}/.zshrc"
+# # shell:
+# #   cmd: echo ""alias ssha='eval $(ssh-agent -s) && ssh-add {{ ssh_filename_private }}'"" >> ~/.zshrc >> ~/.bashrc

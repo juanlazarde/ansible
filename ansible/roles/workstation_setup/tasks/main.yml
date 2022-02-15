@@ -11,9 +11,6 @@
 - name: Loading --> zsh installation
   import_tasks: zsh.yml
 
-- name: Loading --> zsh-autosuggestions installation
-  import_tasks: zsh-autosuggestions.yml
-
 # - name: Loading --> unbound installation
 #   import_tasks: unbound_dns.yml
 #   tags: ["beta"]

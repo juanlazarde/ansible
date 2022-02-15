@@ -1,51 +1,132 @@
 ---
-# Reference https://github.com/gantsign/ansible-role-oh-my-zsh
-
-- name: "[zsh & oh-my-zsh] Install dependencies zsh, git"
+- name: "zsh & oh-my-zsh | setup"
   become: true
-  apt:
-    name: [zsh, git]
-    state: present
 
-- name: "[zsh & oh-my-zsh] Backup zsh configruation file (.zshrc)"
-  copy:
-    src: ~/.zshrc
-    dest: ~/.zshrc.bak
-
-- name: "[zsh & oh-my-zsh] Set zsh as default shell"
-  become: true
-  user:
-    name: "{{sudo_user}}"
-    shell: /bin/zsh
-
-- name: "[zsh & oh-my-zsh] Clone oh-my-zsh"
-  # become_user: '{{ user.username }}'
-  # core.autocrlf=input prevents https://github.com/robbyrussell/oh-my-zsh/issues/4402
-  command: "git clone -c core.autocrlf=input --depth=1 https://github.com/robbyrussell/oh-my-zsh.git .oh-my-zsh"
-  args:
-    creates: "~/.oh-my-zsh"
-
-- name: "[zsh & oh-my-zsh] Set permissions of ~./oh-my-zsh"
-  file:
-    path: "~/.oh-my-zsh"
-    # Prevent the cloned repository from having insecure permissions. Failing to do
-    # so causes compinit() calls to fail with "command not found: compdef" errors
-    # for users with insecure umasks (e.g., "002", allowing group writability).
-    mode: "go-w"
-    recurse: yes
-
-- name: "[zsh & oh-my-zsh] Configure .zshrc"
+  vars:
+    owner_path: "/home/{{ sudo_user }}"
+    zsh_ohmy_plugins:
+      - git
+      - git-flow
+      - docker
+      - ubuntu
+      - colored-man-pages
+      - ansible
+      - python
+      - zsh-syntax-highlighting
+      - zsh-autosuggestions
+    zsh_dependencies:
+      - zsh
+      - git
+      - powerline
+      - fonts-powerline
+    zsh_ohmy_path: "{{ owner_path }}/.oh-my-zsh"
+    zsh_ohmy_custom_plugins:
+      - name: zsh-syntax-highlighting
+        repo: "git://github.com/zsh-users/zsh-syntax-highlighting.git"
+      - name: zsh-autosuggestions
+        repo: "git://github.com/zsh-users/zsh-autosuggestions.git"
+    zsh_ohmy_custom_themes:
+      - name: powerlevel9k
+        repo: "https://github.com/bhilburn/powerlevel9k.git"
+  
   block:
-    - name: "[zsh & oh-my-zsh] Theme"
-      lineinfile:
-        dest: "~/.zshrc"
-        regexp: "^ *[^#]ZSH_THEME="
-        line: "ZSH_THEME='{{oh_my_zsh_theme}}'"
+    - name: "zsh & oh-my-zsh | requirements"
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items: "{{ zsh_dependencies }}"
+      when: ansible_os_family != "Darwin"
 
-    - name: "[zsh & oh-my-zsh] Plugins"
+
+    - name: "zsh & oh-my-zsh | get zsh path"
+      command: which zsh
+      register: zsh_path
+      changed_when: no
+
+
+    - name: "zsh & oh-my-zsh | switch to zsh"
+      user:
+        name: "{{ sudo_user }}"
+        shell: "{{ zsh_path.stdout }}"
+
+
+    - name: "zsh & oh-my-zsh | clone oh-my-zsh repository"
+      git:
+        repo: "https://github.com/robbyrussell/oh-my-zsh.git"
+        dest: "{{ zsh_ohmy_path }}"
+        accept_hostkey: yes
+        update: yes
+
+
+    - name: "zsh & oh-my-zsh | create .zshrc"
+      copy:
+        src: "{{ zsh_ohmy_path }}/templates/zshrc.zsh-template"
+        dest: "{{ owner_path }}/.zshrc"
+        owner: "{{ sudo_user }}"
+        group: "{{ sudo_user }}"
+        mode: 0640
+
+
+    - name: "zsh & oh-my-zsh | clone oh-my-zsh custom plugins"
+      git:
+        repo: "{{ item.repo }}"
+        dest: "{{ zsh_ohmy_path }}/custom/plugins/{{ item.name }}"
+        accept_hostkey: yes
+        update: yes
+      with_items: "{{ zsh_ohmy_custom_plugins }}"
+
+
+    - name: "zsh & oh-my-zsh | edit config with plugins"
       lineinfile:
-        dest: "~/.zshrc"
-        regexp: "^ *[^#]plugins="
-        line: "plugins=({{oh_my_zsh_plugins | join(' ') }})"
-        # consider: "^((?:(?!#).)*?|^#\\s?)plugins="
-        # consider: "(?:^\s*[^#]plugins=\s*)(\(.+\))"
+        dest: "{{ owner_path }}/.zshrc"
+        regexp: "^plugins="
+        line: "plugins=({{ zsh_ohmy_plugins | join(' ') }})"
+
+
+    - name: "zsh & oh-my-zsh | clone oh-my-zsh custom themes"
+      git:
+        repo: "{{ item.repo }}"
+        dest: "{{ zsh_ohmy_path }}/custom/themes/{{ item.name }}"
+        accept_hostkey: yes
+        update: yes
+      with_items: "{{ zsh_ohmy_custom_themes }}"
+
+
+    # zsh_ohmy_theme comes from the hosts.yml
+    - name: "zsh & oh-my-zsh | edit config with theme"
+      lineinfile:
+        dest: "{{ owner_path }}/.zshrc"
+        regexp: "^ZSH_THEME="
+        line: "ZSH_THEME='{{ zsh_ohmy_theme }}'"
+
+
+    - name: "zsh & oh-my-zsh | edit config to enable auto update"
+      lineinfile:
+        dest: "{{ owner_path }}/.zshrc"
+        regexp: "^DISABLE_AUTO_UPDATE="
+        line: "DISABLE_AUTO_UPDATE='{{ zsh_ohmy_disable_auto_update }}'"
+
+    
+    - name: "zsh & oh-my-zsh | edit config custom"
+      lineinfile:
+        dest: "{{ owner_path }}/.zshrc"
+        line: "{{ item }}"
+      with_items:
+        - "export EDITOR='nano'"
+        - 'export SSH_KEY_PATH="~/.ssh/{{ ssh_filename }}"'
+        - 'export HISTORY_IGNORE="(history|ls -ltr|ll|ls -la|lll|ls|pwd|exit|cd|cd ..)"'
+        - 'setopt HIST_FIND_NO_DUPS'
+        - 'export HISTFILESIZE=200000'
+        - 'export HISTSIZE=100000'
+
+
+    - name: "zsh & oh-my-zsh | .oh-my-zsh permission"
+      # Prevent the cloned repository from having insecure permissions. Failing to do
+      # so causes compinit() calls to fail with "command not found: compdef" errors
+      # for users with insecure umasks (e.g., "002", allowing group writability).
+      file:
+        path: "{{ zsh_ohmy_path }}"
+        mode: "go-w"
+        owner: "{{ sudo_user }}"
+        group: "{{ sudo_user }}"
+        recurse: yes

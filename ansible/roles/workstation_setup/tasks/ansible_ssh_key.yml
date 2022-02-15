@@ -1,19 +1,17 @@
 ---
-- vars:
-    # exctract name of profile from variable definition, which is in a directory format
-    the_ansible_name: "{{ the_ansible_ssh_filename | regex_replace('^.*(?<=\\/)(?P<name>.*)(?=\\.)', '\\g<name>') }}"
-  name: "ansible ssh key | generate SSH key for '{{ the_ansible_name }}'"
+- name: "ansible ssh key | create"
+  become: true
   user:
-    name: "{{ the_ansible_name }}"
+    name: "{{ sudo_user }}"
     generate_ssh_key: yes
-    ssh_key_type: "{{ ssh_key_type }}"
+    ssh_key_type: "{{ the_ansible_ssh_key_type }}"
     ssh_key_passphrase: "{{ the_ansible_ssh_passphrase }}"
-    ssh_key_file: "{{ the_ansible_ssh_filename }}"
-    ssh_key_comment: "{{ the_ansible_name }} key"
+    ssh_key_file: ".ssh/{{ the_ansible_ssh_filename }}"
+    ssh_key_comment: "{{ the_ansible_ssh_filename }} key"
 
-- vars:
-    file_host: ~/.ssh/known_hosts
-  name: "ansible ssh key | Keeping authorized keys sorted and unique"
-  shell: |
-    sort "{{ file_host }}" | uniq > "{{ file_host }}".uniq
-    cp "{{ file_host }}".uniq "{{ file_host }}"
+# - name: "ansible ssh key | Keeping authorized keys sorted and unique"
+#   vars:
+#     file_host: ~/.ssh/known_hosts
+#   shell: |
+#     sort "{{ file_host }}" | uniq > "{{ file_host }}".uniq
+#     cp "{{ file_host }}".uniq "{{ file_host }}"

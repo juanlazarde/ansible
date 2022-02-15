@@ -28,7 +28,21 @@ These scripts are in an early stage, but work fine on my setup. Post your issues
 
 **The code here, will not run out-of-the-box**. You need to configure a couple of files listed below (ansible.cfg, hosts.yml).
 
-## My setup
+# Table of Contents
+- [My Setup](#my-setup)
+- [Contents](#contents)
+- [Install](#install)
+    - [Configure installation](#configure-the-installation)
+    - [Encryption](#encryption)
+    - [Check connection to hosts](#check-connection-to-hosts)
+- [Supported Platforms](#supported-platforms)
+- [Usage](#usage)
+    - [Setup Workstations](#first-workstation)
+    - [Deploy the ansible ssh keys to servers](#then-deploy-the-ansible-ssh-keys-to-all-servers-hosts)
+    - [Setup servers](#finally-setup-all-server)
+
+
+# My setup
 - Bare metal rack server.
 - Proxmox Hypervisor
 - Multple VM's and LXD's
@@ -159,7 +173,7 @@ It's very helpful, recommended even, to create an 'ansible' SSH key pair in the 
 
     bash deploy_ansible_ssh.sh
 
-## Finally, setup all server-hosts.
+## Finally, setup all server.
 These are all the plays to be applied to the server group only. These are the remote hosts, like Apache, TrueNas, reverse-proxy, etc.
 
     bash server_setup.sh
@@ -243,6 +257,17 @@ Test connection:
 	
 	# Download and execute from GIT
 	sudo ansible-pull --vault-password-file ~/.vault_key -U https://github.com/juanlazarde/ansible.git
+
+# Debug
+Use tags `-t "test"`, step by step `--step`, start at a certain task `--start-at-task "here"`, and show what's under the hood with `-vvv`
+
+    ansible-playbook playbook.yml -i hosts.yml --ask-become-pass --vault-password-file ~/.vault_key -l "workstations" -t "setup" --start-at-task="test" --step -vvv
+
+Evaluate a variable with a dummy tasK:
+
+    - name: Debugging
+      debug: msg="{{ some.variable}}"
+
 
 # Bonus - Prepare the VM
 When creating a VM template for i.e. Proxmox, it's recommended to prepare the current session. Here's a script that will help set some of these out.
