@@ -4,43 +4,37 @@
 
 # Ultimate Homelab with Ansible
 
-These scripts help setup and update your workstation and servers with Ansible agent-less package, so nothing installed in the servers!
+These scripts help setup and update your workstation and servers with Ansible agent-less package, so nothing is installed in the servers!
 
-Ansible scripts are made of *playbooks*. These playbooks include *plays* such as:
+Ansible scripts are made of *playbooks*. These playbooks include *roles* that:
 
-    - updates and upgrades apt updating, reboots if needed
-    - installs unattended-upgrade package
-    - elevates admin user to super user level
-    - disables root password
-    - creates SSH key pairs and updates remote hosts with the public key
-    - disables remote root login
-    - installs zsh, oh-my-zsh, with auto suggestions plugin. Sets as default shell
-    - removes Ubuntu's snap services and leave-behinds
-    - maximizes LVM partitions
-    - customizes the hostname
-    - updates the timezone
-    - installs "qemu-guest-agent" if it's a Proxmox VM
-    - installs and configures UFW (uncomplicated fire wall)
-    - installs and configures fail2ban to ban multiple login attempts
+    - update and upgrade all packages, rebooting if needed
+    - install unattended-upgrade packages
+    - create and elevate admin user to super user level
+    - disable root passwords
+    - disable remote root logins
+    - create SSH key pairs, updating remote hosts with the public key
+    - install zsh, oh-my-zsh, with powerlevel9k and custom plugins, and sets the default shell
+    - remove Ubuntu's Snap services and leave-behinds
+    - maximize LVM partitions
+    - customize the hostname
+    - update the timezone
+    - install "qemu-guest-agent" if it's a Proxmox VM
+    - install and configures UFW (uncomplicated fire wall)
+    - install and configures fail2ban to ban multiple login attempts
     ... for now
 
-These scripts are in an early stage, but work fine on my setup. Post your issues and I'll try to help. I'm sharing this repository, as a lot comes from developers on GitHub and other sources (like YouTube) and I'm trying to give back. Most of the material is commented or self-explanatory.
+These scripts are in an early stage, but work fine on my setup. Post your issues and I'll try to help. I'm sharing this repository, as a lot comes from developers on GitHub and other sources (like YouTube). I'm trying to give back. Most of the material is commented or self-explanatory.
+
+Once installed, your workstation will be 90% ready. I can't think about what the other 10% would be, but I won't say it'll be 100% ready. Open a discussion for more features. Servers have a different story, servers are more like 10% ready to go. They'll be accessible via ansible, with ssh keys, updated, root locked, ufw and fail2ban up and running, super user created and unattended upgrades installed, to name a few. The rest is up to you. Whether it will be a web server, NAS, proxy manager, VPN, etc.
 
 **The code here, will not run out-of-the-box**. You need to configure a couple of files listed below (ansible.cfg, hosts.yml).
 
 # Table of Contents
-- [My Setup](#my-setup)
 - [Contents](#contents)
 - [Install](#install)
-    - [Configure installation](#configure-the-installation)
-    - [Encryption](#encryption)
-    - [Check connection to hosts](#check-connection-to-hosts)
-- [Supported Platforms](#supported-platforms)
 - [Usage](#usage)
-    - [Setup Workstations](#first-workstation)
-    - [Deploy the ansible ssh keys to servers](#then-deploy-the-ansible-ssh-keys-to-all-servers-hosts)
-    - [Setup servers](#finally-setup-all-server)
-
+- [Debug](#debug)
 
 # My setup
 - Bare metal rack server.
@@ -48,7 +42,11 @@ These scripts are in an early stage, but work fine on my setup. Post your issues
 - Multple VM's and LXD's
 - Workstation is a Windows 10 with Ubuntu WSL
 - Testing all on Virtualbox VM's
-- Mostly using Ubuntu or light-weight debian/Ubuntu versions and Docker
+- Mostly using Ubuntu or light-weight debian/Ubuntu versions
+
+# Supported platforms
+- Ubuntu 20.04 LTS
+- Windows WSL Ubuntu 20.04
 
 # Contents
 - `ansible_install.sh` bash to install ansible, clone this repository, install vault key, and encrypt secrets. **Start here**
@@ -71,7 +69,7 @@ Download the installation script: `ansible_install.sh` by running this line:
 
     bash ansible_install.sh
 
-This script downloads Ansible with dependencies, installs this git repository locally, creates the vault key, and it helps encrypt information to be inserted to the host.yml.
+This script downloads Ansible with dependencies, installs this git repository locally, creates the vault key, and it helps encrypt information (like passwords) to be inserted to the host.yml.
 
 About the `bash` command. I've included it, because in some shells you'd need to change the ownership if you want to run it as `./ansible_install.sh`
 
@@ -126,13 +124,13 @@ The variables I've set to encrypted values in `hosts.yml`, are:
 
 But, we'll need to edit it to adjust the proper YAML format. In example:
 
-        sudo_ssh_passphrase: !vault |
-            $ANSIBLE_VAULT;1.1;AES256
-            376563383...
+    sudo_ssh_passphrase: !vault |
+        $ANSIBLE_VAULT;1.1;AES256
+        376563383...
 
 So,
 
-        nano hosts.yml
+    nano hosts.yml
 
 Remember to delete the `encrypted_text.txt`:
 
@@ -142,10 +140,6 @@ Remember to delete the `encrypted_text.txt`:
 Enter the following command to make sure ansible works and that you can connect to your hosts:
     
     ansible all -m ping
-
-# Supported platforms
-- Ubuntu 20.04 LTS
-- Windows WSL Ubuntu 20.04
 
 # Usage
 ## First, workstation
@@ -272,11 +266,10 @@ Evaluate a variable with a dummy tasK:
 # Bonus - Prepare the VM
 When creating a VM template for i.e. Proxmox, it's recommended to prepare the current session. Here's a script that will help set some of these out.
 
-Download and run:
+Run:
 
-    curl -LJO https://raw.githubusercontent.com/juanlazarde/ansible_homelab/main/prep_vm.sh
-    bash clear_vm.sh
-
+    sh -c "$(curl -fsSL https://raw.githubusercontent.com/juanlazarde/ansible_homelab/main/prep_vm.sh)"
+    
 This will:
 
 1. Install cloud-init if it's not installed: `sudo apt install -y cloud-init`
@@ -284,6 +277,10 @@ This will:
 3. If the machine identifier exists, then truncate it, usually in Unbuntu: `cat /etc/machine-id && sudo truncate -s 0 /etc/machine-id`
 4. Create a symbolic link: ls -l /var/lib/dbus/machine-id || sudo ln -s /etc/machine-id /var/lib/dbus/machine-id
 5. Clean up packages: `(sudo apt clean; sudo apt autoremove) && sudo poweroff`
+
+If there're problems connecting via SSH, try:
+
+    sudo dpkg-reconfigure openssh-server
 
 # Contributing
 The issue tracker is the preferred channel for bug reports, features requests and submitting pull requests.

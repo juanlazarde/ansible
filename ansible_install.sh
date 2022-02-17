@@ -8,310 +8,334 @@
 #
 # Normal usage; without arguments, will install ansible, scripts, and vault key.
 #
-#     --ansible, -a             : don't install Ansible and its dependencies.
-#     --repository, -r          : don't download the repository with Ansible scripts from GitHub.
-#     --vault, -v               : don't create a secret vault key
-#     --encrypt, -e [<filename>]: tool to create a hashed ansible-encrypted variable. Optionally, save it as a file.
-#     -d directory name: directory where you want to install the Ansible scripts. Default: ansible_scripts.
-#     --help, -h                : help info
+#     --no-ansible, -a            : don't install Ansible and its dependencies.
+#     --no-repository, -r         : don't download the repository with Ansible scripts from GitHub.
+#     --no-vault, -v              : don't create a secret vault key.
+#     --encrypt, -e [filename]    : tool to create a hashed ansible-encrypted variable. Optionally, save it as a file.
+#     -d directory name           : directory where you want to install the Ansible scripts. Default: ansible_scripts.
+#     --help, -h                  : help info
 #
 # More info:
 #    - https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#installing-ansible-on-ubuntu
 #
 
-# Exit on error
-# set -e
-clear
+# Enable xtrace if the DEBUG environment variable is set
+#DEBUG=true
+[[ ${DEBUG-} =~ ^1|yes|true$ ]] && set -o xtrace && set -x      # Trace the execution of the script (debug)
 
-# Define variables.
-# -----------------
-# Install ansible and the dependencies.
-INSTALL_ANS="true"
-# Retrieve and expand the repository from GitHub.
-INSTALL_REP="true"
-# Directory where the repository will be installed.
-DEFAULT_DEST="ansible_scripts"
-# Install the vault key
-INSTALL_VLT="true"
-# Secret vault: DO NOT SHARE THIS
-DEFAULTVAULT=".vault_key"
-DEFAULT_SALT_FILE=".vault_salt"
-# Encryption utility default
-UTIL_ENCRYPT="false"
-# Encrypted file with the variable just encrypted
-ENCRYPTED_FILE=""
-# Default salt Value
-SECRET_SALT='wpmlxaWO1Uhz9'
+# A better class of script...
+set -o errexit          # Exit on most errors (see the manual)
+set -o errtrace         # Make sure any error trap is inherited
+set -o nounset          # Disallow expansion of unset variables
+set -o pipefail         # Use last non-zero exit code in a pipeline
 
-# Initialization
-# User's home directory
-HOME_DIR=$(eval echo "~")
-# File directory
-readonly SCRIPT_BASE="$(cd $(dirname '${BASH_SOURCE[0]}') && pwd)"
-# File name
-readonly PROGNAME=$(basename $0)
+# DESC: Script initialization.
+# ARGS: $@ (optional): Arguments provided to the script.
+# OUTS: default variables, directory/file related variables.
+#       $default_repository_dir: Directory where the repository will be installed.
+#       $default_vault_name: Secret vault encryption key (DO NOT SHARE THESE FILES!!! i.e. add to .gitignore).
+#       $default_salt_name: Salt file with salt to hash passwords.
+#       $default_encrypted_name: Encrypted file with the variable just encrypted.
+#       $default_salt: Default salt value.
+#
+#       $install_ansible: Install ansible and the dependencies.
+#       $install_repository: Retrieve and expand the repository from GitHub.
+#       $install_vault: Create the vault key file.
+#       $util_encrypt: Hash and encrypt password utility.
+function script_init() {
+    # Default variables
+    default_repository_dir="ansible_scripts"
+    default_vault_name=".vault_key"
+    default_salt_name=".vault_salt"
+    default_salt=""
 
-# SECRETVAULT="$SCRIPT_BASE/$DEFAULTVAULT"
-# SECRETVAULT="~/$DEFAULTVAULT"
-SECRETVAULT="$HOME_DIR/$DEFAULTVAULT"
-SALT_FILE="$HOME_DIR/$DEFAULT_SALT_FILE"
-DESTINATION="$SCRIPT_BASE/$DEFAULT_DEST"
+    # Initialization
+    install_ansible='true'
+    install_repository='true'
+    install_vault='true'
+    util_encrypt='false'
 
-# This is just cool info to have.
-# # File name, without the extension
-# readonly PROGBASENAME=${PROGNAME%.*}
-# # Arguments
-# readonly ARGS="$@"
-# # Arguments number
-# readonly ARGNUM="$#"
+    # Read-only variables
+    readonly script_params="$*"
+    readonly home_dir=$(eval echo "~")
+    readonly orig_cwd="${PWD}"
+    readonly script_path="${BASH_SOURCE[0]}"
+    readonly script_dir="$(dirname "${script_path}")"
+    readonly script_name="$(basename "${script_path}")"
+    readonly script_name_no_ext="${script_name%.*}"
+    readonly vault_path="${home_dir}/${default_vault_name}"
+    readonly salt_path="${home_dir}/${default_salt_name}"
+    readonly default_repository_dir="${orig_cwd}/${default_repository_dir}"
+    if [[ -n ${default_salt} ]]; then
+        readonly salt=${default_salt}
+    else
+        readonly salt=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '')
+    fi
 
-# Program usage
-usage() {
-	echo "Ansible scripts for workstations and servers."
-	echo
-    echo "Usage without arguments, will install ansible, scripts, and vault key."
-    echo
-	echo "Usage: bash $PROGNAME [optional [-a] [-r] [-v] [-e [<filename>]] [-d <directory name>] [-h]]"
-	echo
-	echo "Optional arguments:"
-	echo
-	echo "  -h, --help"
-	echo "      this help text."
-	echo "      DEFAULT: yes"
-    echo
-	echo "  -a, --ansible"
-	echo "      don't install Ansible and its dependencies."
-    echo "      DEFAULT: yes"
-	echo
-	echo "  -r, --repository"
-	echo "      don't download the repository with Ansible scripts from GitHub."
-    echo "      DEFAULT: yes"
-	echo
-    echo "  -v, --vault"
-    echo "      don't create a secret vault key"
-    echo "      DEFAULT: yes, here: $SECRETVAULT"
-    echo
-	echo "  -d <directory>"
-	echo "      directory where you want to install the Ansible scripts."
-    echo "      DEFAULT: $DESTINATION"
-	echo
-	echo "  -e, --encrypt <filename>"
-	echo "      tool to create an ansible compatible hashed and encrypted variable."
-    echo "      DEFAULT: no"
-    echo "      <filename> is optional, and it will save the encrypted text to a file."
-
+    # Atlernative sources.
+    # readonly orig_cwd="$(cd $(dirname '${BASH_SOURCE[0]}') && pwd)"
+    # readonly script_name="$(basename $0)""
 }
 
-# Loop over command line options
-while :
-do
-  case "$1" in
-    -h|--help)          usage; exit 0;;
-    -a|--ansible)       INSTALL_ANS="false";;
-    -r|--repository)    INSTALL_REP="false";;
-    -v|--vault)         INSTALL_VLT="false";;
-    -d|--destination)   DESTINATION="$2";;
-    -e|--encrypt)       UTIL_ENCRYPT="true"; ENCRYPTED_FILE="$2";;
-    -*|--*)             echo "Invalid option '$1'. Use --help to see the valid options" >&2; exit 1;;
-    *)                  break;;
-  esac
-  shift
-done
+# DESC: Parameter parser
+# ARGS: $@ (optional): Arguments provided to the script
+# OUTS: Variables indicating command-line parameters and options
+#       $install_ansible: if true it will install ansible
+#       $install_repository: if true it will install the repository of ansible scripts
+#       $install_vault: if true creates vault key in home folder.
+#       $at_least_one: if true one of the three options above was selected.
+#       $util_encrypt: if true none of the four variables above will be true, runs encryption func.
+#       $repository_dir: is the destination dir for the repository.
+function parse_params() {
+    local param
+    while [[ "$#" -gt 0 ]]; do
+        param="${1-}"
+        case ${param} in
+            -h|--help)              script_usage; exit 0 ;;
+            -a|--no-ansible)        install_ansible='false' ;;
+            -r|--no-repository)     install_repository='false' ;;
+            -v|--no-vault)          install_vault='false' ;;
+            -d|--repository-dir)    repository_dir="${2-}"; shift ;;
+            -e|--encrypt)           util_encrypt='true'; encrypted_name="${2-}"; break ;;
+            *)                      printf '%s\n' "Invalid option '${param}'. Use --help to see the valid options" >&2; exit 1 ;;
+        esac
+        shift
+    done
 
-# User must enter at least one option. If the variables are changed to "false"
-if [[ $INSTALL_ANS = 'false' && $INSTALL_REP = 'false' && $INSTALL_VLT = 'false' && $UTIL_ENCRYPT = 'false' ]]; then
-    echo "Invalid option. Use --help to see the valid options" >&2
-    exit 1
-fi
+    # User must enter a valid option or combination of valid options. Exit if all options are false.
+    if ! (${install_ansible} || ${install_repository} || ${install_vault} || ${util_encrypt}); then
+        printf '%s\n' "Invalid option. Use --help to see the valid options" >&2
+        exit 1
+    fi
 
-AT_LEAST_ONE="false"
+    # If the '-e' option is selected, then all of the other options are ignored.
+    if ${util_encrypt}; then
+        printf '%s\n' "Using [-e, --encrypt] option will disable all other options."
+        install_ansible='false'; install_repository='false'; install_vault='false'; at_least_one='false'
+    else
+        [[ ${install_ansible} || ${install_repository} || ${install_vault} ]] && at_least_one='true'
+        [[ -z "${repository_dir-}" ]] && repository_dir="${default_repository_dir}"
+        if [[ ${install_repository} && -d "${repository_dir}" ]]; then printf "Directory '${repository_dir}' exists. Try another.\n"; exit 1; fi
+    fi
+}
 
-# If the '-e' option is selected, then all of the other options are ignored.
-if [ $UTIL_ENCRYPT = 'true' ]; then
-    echo "Using [-e, --encrypt] option will disable all other options."
-    INSTALL_ANS='false'; INSTALL_REP='false'; INSTALL_VLT='false'
-else
-    [[ $INSTALL_ANS = 'true' || $INSTALL_REP = 'true' || $INSTALL_VLT = 'true' ]] && AT_LEAST_ONE='true'
-fi
 
-# Check whether the directory already exists.
-if [[ $INSTALL_REP = 'true' && -d "$DESTINATION" ]]; then
-    echo "Directory '$DESTINATION' exists. Try another."
-    exit 3
-fi
+# DESC: Script usage, when -h, --help are used as an option
+# ARGS: None
+# OUTS: None
+function script_usage() {
+    cat << EOF
+    Ansible scripts for workstations and servers.
 
-# Update apt repository of packages.
-updatePackages() {
-    echo
-    echo "#####################################"
-    echo "#     Updating apt repositories     #"
-    echo "#####################################"
-    echo
-    # sudo apt update
-    # This should skip updating if it has been less than a day.
-    if [ -z "$(find -H /var/lib/apt/lists -maxdepth 0 -mtime -1)" ]; then
-        echo "To install these packages, you'll need 'sudo' powers."
+    Usage without arguments will install ansible, scripts, and vault key.
+
+    Usage: bash ${script_name} [optional [-a] [-r] [-v] [-e [<filename>]] [-d <directory name>] [-h]]
+
+    Optional arguments:
+
+    -h, --help                : this help text.
+    -a, --no-ansible          : don't install Ansible and dependencies. DEFAULT: ${install_ansible}
+    -r, --no-repository       : don't download repository with scripts. DEFAULT: ${install_repository}
+    -v, --no-vault            : don't create a secret vault key. DEFAULT: ${install_vault}
+                                location:${vault_path}
+    -d <directory>            : directory where you want to install the Ansible scripts.
+                                location:${default_repository_dir}
+    -e, --encrypt <filename>  : create ansible hashed and encrypted variable. DEFAULT: ${util_encrypt}
+                                filename is optional
+EOF
+}
+
+# DESC: Header.
+# ARGS: $at_least_one has to be true
+# OUTS: None
+function header() {
+    [[ ! ${at_least_one} ]] && return
+    printf '%s\n'   "-----------------------------------" \
+                    "Let's install some ansible scripts." \
+                    "-----------------------------------" \
+                    ""
+}
+
+# DESC: Update apt repository of packages, if last the update was older than a day.
+# ARGS: $at_least_one has to be true
+# OUTS: None
+function updatePackages() {
+    [[ ! ${at_least_one} ]] && return
+    printf '%s\n'   "#####################################" \
+                    "#     Updating apt repositories     #" \
+                    "#####################################"
+    # Skip updating if it has been less than a day.
+    if [[ -z "$(find -H /var/lib/apt/lists -maxdepth 0 -mtime 0)" ]]; then
+        printf "To install these packages, you'll need 'sudo' powers.\n"
         sudo apt update
     else
-        echo "Repositories were updated less than a day ago."
+        printf "Repositories were updated less than a day ago.\n"
     fi
-    echo
+    printf "\n"
 }
 
-# Install Ansible and dependencies.
-installAnsible() {
-    echo
-    echo "#####################################"
-    echo "# Installing Ansible & dependencies #"
-    echo "#####################################"
+# DESC: Install Ansible and dependencies.
+# ARGS: $install_ansible has to be true
+# OUTS: None
+function installAnsible() {
+    [[ ! ${install_ansible} ]] && return
+    printf '%s\n'   "#####################################" \
+                    "# Installing Ansible & dependencies #" \
+                    "#####################################"
     sudo apt install -y software-properties-common
     sudo apt-add-repository --yes ppa:ansible/ansible
     sudo apt update
     sudo apt install -y ansible
     sudo apt install -y openssh-client
     sudo apt install -y sshpass
-    echo
+    printf "\n"
 }
 
-# Check if whois is installed, as mkpasswd is part of the package
-checkPackage() {
-    dpkg -s $1 &> /dev/null
+# DESC: Checks if a package is installed, i.e. whois as mkpasswd is part of the package
+# ARGS: "package" name
+# OUTS: None
+function checkPackage() {
+    dpkg -s "${1}" &> /dev/null
     if [ $? -ne 0 ]; then
-        echo
-        echo "I will need sudo priviledge to install $1."
-        sudo apt install -y $1
-        echo
+        printf "%s\n" "I will need sudo priviledge to install ${1}."
+        sudo apt install -y "${1}"
+        printf "\n"
     fi
 }
 
-# Download the repository with Ansible scripts from GitHub.
-getAnsibleScripts() {
-    echo
-    echo "#####################################"
-    echo "#      Getting ansible scripts      #"
-    echo "#####################################"
+# DESC: Download the repository with Ansible scripts from GitHub.
+# ARGS: $install_repository has to be true
+# OUTS: None
+function getAnsibleScripts() {
+    [[ ! ${install_repository} ]] && return
+    printf '%s\n'   "#####################################" \
+                    "#      Getting ansible scripts      #" \
+                    "#####################################"
     checkPackage "git"
-    git clone https://github.com/juanlazarde/ansible_homelab.git "$DESTINATION"
-    echo
-    echo "Ansible scripts installed in '$DESTINATION'"
-    echo
+    git clone https://github.com/juanlazarde/ansible_homelab.git "${repository_dir}"
+    printf "\nAnsible scripts installed in '$repository_dir'\n"
 }
 
-# Create secret Ansible vault.
-createVault() {
-    echo
-    echo "#####################################"
-    echo "#      Create secret vault key      #"
-    echo "#####################################"
-    echo
+# DESC: Create secret Ansible vault file and salt for hashing, using mkpasswd.
+# ARGS: $install_vault has to be true
+# OUTS: None
+function createVault() {
+    [[ ! ${install_vault} ]] && return
+    printf '%s\n'   "#####################################" \
+                    "#      Create secret vault key      #" \
+                    "#####################################"
     checkPackage "whois"
-    # Create salt, so that each installation has a unique password.
-    SECRET_SALT=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '')
     set -C  # don't overwrite file
-    echo $SECRET_SALT | tr -d '\n' > $SALT_FILE
-    chmod 600 $SALT_FILE
-    echo "Enter the secret password for the vault. It will be hashed."
-	mkpasswd --method=sha-512 --salt=$SECRET_SALT | tr -d '\n' > $SECRETVAULT
-    chmod 600 $SECRETVAULT
+    printf '%s' "${salt}" > ${salt_path}
+    chmod 600 ${salt_path}
+    printf "Enter the secret password for the vault. It will be hashed.\n"
+	mkpasswd --method=sha-512 --salt=${salt} | tr -d '\n' > ${vault_path}
+    chmod 600 ${vault_path}
     set +C
-    echo
-    echo "Remember your password. Otherwise, delete the vault key file and run this script again."
-    echo "If you don't want to install ansible and the script, use options '-a -r' to skip."
-    echo "Secret key stored here '$SECRETVAULT'"
-    echo "Secret salt stored here '$SALT_FILE'"
-    echo
+    printf '%s\n'   "Remember your password. Otherwise, delete the vault key and salt file, and run this script again." \
+                    "If you don't want to install ansible and the script, use options '-a -r' to skip." \
+                    "Secret key stored here '${vault_path}'" \
+                    "Secret salt stored here '${salt_path}'" \
+                    ""
 }
 
-# Suggestions for next steps.
-nextSteps() {
-    echo
-    echo "#####################################"
-    echo "#             Next steps            #"
-    echo "#####################################"
-    echo
-    echo "1. Get into the ansible directory:"
-    echo "      $ cd $DESTINATION"
-    echo "2. Edit ansible.cfg"
-    echo "3. Edit hosts.yml"
-    echo "4. Create hashed & encrypted variables with '$PROGNAME -e'"
-    echo "5. Confirm connection to hosts:"
-    echo "      $ ansible all -m ping"
-    echo "6. Run workstation script:"
-    echo "      $ bash workstation_setup.sh"
-    echo "7. Run SSH deployment to hosts"
-    echo "      $ bash deploy_ansible_ssh.sh"
-    echo "8. Run remote host plays:"
-    echo "      $ bash sever_setup.sh"
-    echo
+# DESC: Next step instructions.
+# ARGS: $at_least_one has to be true
+# OUTS: None
+function nextSteps() {
+    [[ ! ${at_least_one} ]] && return
+    cat << EOF
+
+    #####################################"
+    #             Next steps            #"
+    #####################################"
+
+    1. Get into the ansible directory:"
+        $ cd ${repository_dir}"
+    2. Edit ansible.cfg"
+    3. Edit hosts.yml"
+    4. Create hashed & encrypted variables with '${script_name} -e'"
+    5. Confirm connection to hosts:"
+        $ ansible all -m ping"
+    6. Run workstation script:"
+        $ bash workstation_setup.sh"
+    7. Run SSH deployment to hosts"
+        $ bash deploy_ansible_ssh.sh"
+    8. Run remote host plays:"
+        $ bash sever_setup.sh"
+
+EOF
 }
 
-# Encryption utility for ansible variables.
-ansibleEncrypt() {
-    echo
-    echo "#####################################"
-    echo "#   Encryption with Ansible vault   #"
-    echo "#####################################"
-    echo
-    echo "* Must have installed 'mkpasswd' part of the 'whois' pkg, 'ansible', and 'sed'"
-    echo "* Encryption key location: $SECRETVAULT"
-    echo "* Encryption salt location: $SALT_FILE"
-    echo "* If you want the output in a file, type:"
-    echo "      $ bash $PROGNAME -e encrypted_text.txt"
-    echo
+# DESC: Encryption utility for ansible variables.
+# ARGS: $util_encrypt has to be true
+# OUTS: None
+function ansibleEncrypt() {
+    [[ ! ${util_encrypt} ]] && return
+    printf '%s\n'   "#####################################" \
+                    "#   Encryption with Ansible vault   #" \
+                    "#####################################" \
+                    "" \
+                    "* Must have installed 'mkpasswd' part of the 'whois' pkg, 'ansible', and 'sed'" \
+                    "* Encryption key location: ${vault_path}" \
+                    "* Encryption salt location: ${salt_path}" \
+                    "* If you want the output in a file, type:" \
+                    "      $ bash ${script_name} -e encrypted_text.txt" \
+                    ""
     # Check that mkpasswd is installed (part of whois)
     checkPackage "whois"
 
     # Read the secret salt file if it was created (otherwise use the default, set above)
-    [[ -f "$SALT_FILE" ]] && SECRET_SALT=$(cat $SALT_FILE)
+    [[ -f "${salt_path}" ]] && current_salt=$(cat ${salt_path}) || current_salt=${salt}
 
     # Check that the Ansible Vault key was created.
-    if [ -f "$SECRETVAULT" ]; then
-        # Password request, hashing and encrypting. Dependeing on existance of file name after '-e' it will save or show.
-        echo "Enter your password here. It will be hashed and encrypted. Remember the password."
-        if [ "$ENCRYPTED_FILE" = "" ]; then
-            mkpasswd --method=sha-512 --salt=$SECRET_SALT | \
+    if [ -f "${vault_path}" ]; then
+        # Password request, hashing and encrypting. Depending on existance of file name after '-e' it will save or show.
+        printf "Enter your password here. It will be hashed and encrypted. Remember the password.\n"
+        if [ -n "${encrypted_name}" ]; then
+            mkpasswd --method=sha-512 --salt=${current_salt} | \
             tr -d '\n' | \
-            ansible-vault encrypt --vault-password-file $SECRETVAULT | \
+            ansible-vault encrypt --vault-password-file ${vault_path} | \
             sed '/$ANSIBLE/i \!vault |'
         else
-            mkpasswd --method=sha-512 --salt=$SECRET_SALT | \
+            mkpasswd --method=sha-512 --salt=${current_salt} | \
             tr -d '\n' | \
-            ansible-vault encrypt --vault-password-file $SECRETVAULT | \
+            ansible-vault encrypt --vault-password-file ${vault_path} | \
             sed '/$ANSIBLE/i \!vault |' \
-            > "$ENCRYPTED_FILE"
-            echo
-            echo "Saved encrypted text to $ENCRYPTED_FILE"
+            > "${encrypted_name}"
+            printf "\nSaved encrypted text to ${encrypted_name}"
         fi
         # To Decrypt and check that everything is ok:
         # ansible localhost -m ansible.builtin.debug -a var="test" -e "@test.yml" --vault-password-file ~/.vault_key
 
     else
-        echo
-        echo "Secret Ansible Vault key is not available (i.e. not created)."
-        echo "Run 'bash $PROGNAME -a -r'. This will create $SECRETVAULT"
+        printf  "\nSecret Ansible Vault key is not available (i.e. not created)." \
+                "Run 'bash ${script_name} -a -r'. This will create ${vault_path}"
     fi
-    echo
+    printf "\n"
 }
 
-if [ $AT_LEAST_ONE = 'true' ]; then
-    echo "-----------------------------------"
-    echo "Let's install some ansible scripts."
-    echo "-----------------------------------"
-    echo
+
+# DESC: Main control flow
+# ARGS: $@ (optional): Arguments provided to the script
+# OUTS: None
+function main() {
+
+    script_init "$@"
+    parse_params "$@"
+
+    header
     updatePackages
-fi
+    installAnsible
+    getAnsibleScripts
+    createVault
+    nextSteps
 
-# echo "Install Ansible"
-[ $INSTALL_ANS = 'true' ] && installAnsible
+    ansibleEncrypt
+}
 
-# echo "Install Repository"
-[ $INSTALL_REP = 'true' ] && getAnsibleScripts
+# Invoke main with args
+main "$@"
 
-# echo "Install Vault"
-[ $INSTALL_VLT = 'true' ] && createVault
-
-# next steps message
-[ $AT_LEAST_ONE = 'true' ] && nextSteps
-
-# encryption utility '-e' option
-[ $UTIL_ENCRYPT = 'true' ] && ansibleEncrypt
+# Approach for Bash:  https://github.com/ralish/bash-script-template/blob/main/template.sh
+# Reference for Bash: https://www.cheatsheet.wtf/bash/

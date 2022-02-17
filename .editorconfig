@@ -15,7 +15,7 @@ insert_final_newline = true
 charset = utf-8
 
 # 2 space indentation
-[*.{yml,sh},Vagrantfile,Dockerfile*]
+[*.yml,Vagrantfile,Dockerfile*]
 indent_size = 2
 indent_style = space
 
@@ -29,3 +29,15 @@ trim_trailing_whitespace = false
 [Makefile]
 indent_style = tab
 tab_width = 8
+
+# Shell scripts
+[*.sh]
+max_line_length = 79
+keep_padding = true             # shfmt: -kp
+space_redirects = true          # shfmt: -sr
+switch_case_indent = true       # shfmt: -ci
+charset = utf-8
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+insert_final_newline = true
