@@ -84,16 +84,21 @@ and run the commands following the guide below.
 
 Make the most out of `ansible_install.sh`:
 
-    Syntax: bash ansible_install.sh [optional [-a] [-r] [-v] [-e [<file name>]] [-d <directory name>] [-h]]
+    Usage without arguments will install ansible, scripts, and vault key.
 
-    Normal usage; without arguments, will install ansible, scripts, and vault key.
+    Usage: bash ${script_name} [optional [-a] [-r] [-v] [-e [<filename>]] [-d <directory name>] [-h]]
 
-    --ansible, -a             : don't install Ansible and its dependencies.
-    --repository, -r          : don't download the repository with Ansible scripts from GitHub.
-    --vault, -v               : don't create a secret vault key
-    --encrypt, -e [<filename>]: tool to create a hashed ansible-encrypted variable. Optionally, save it as a file.
-    -d directory name: directory where you want to install the Ansible scripts.
-    --help, -h                : help info
+    Optional arguments:
+
+    -h, --help                : this help text.
+    -a, --no-ansible          : don't install Ansible and dependencies. DEFAULT: ${install_ansible}
+    -r, --no-repository       : don't download repository with scripts. DEFAULT: ${install_repository}
+    -v, --no-vault            : don't create a secret vault key. DEFAULT: ${install_vault}
+                                location:${vault_path}
+    -d <directory>            : directory where you want to install the Ansible scripts.
+                                location:${default_repository_dir}
+    -e, --encrypt <filename>  : create ansible hashed and encrypted variable. DEFAULT: ${util_encrypt}
+                                filename is optional
 
 ## Configure the installation
 Edit the following files to meet your needs:

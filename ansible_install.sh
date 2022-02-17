@@ -20,8 +20,8 @@
 #
 
 # Enable xtrace if the DEBUG environment variable is set
-#DEBUG=true
-[[ ${DEBUG-} =~ ^1|yes|true$ ]] && set -o xtrace && set -x      # Trace the execution of the script (debug)
+# DEBUG=true
+[[ ${DEBUG-} =~ ^1|yes|true$ ]] && set -o xtrace      # Trace the execution of the script (debug)
 
 # A better class of script...
 set -o errexit          # Exit on most errors (see the manual)
@@ -34,9 +34,10 @@ set -o pipefail         # Use last non-zero exit code in a pipeline
 # OUTS: default variables, directory/file related variables.
 #       $default_repository_dir: Directory where the repository will be installed.
 #       $default_vault_name: Secret vault encryption key (DO NOT SHARE THESE FILES!!! i.e. add to .gitignore).
-#       $default_salt_name: Salt file with salt to hash passwords.
 #       $default_encrypted_name: Encrypted file with the variable just encrypted.
-#       $default_salt: Default salt value.
+#       $default_salt_name: Salt file with salt to hash passwords.
+#       $salt_path: path to salt file.
+#       $salt: Salt to be used for hashing passwords.
 #
 #       $install_ansible: Install ansible and the dependencies.
 #       $install_repository: Retrieve and expand the repository from GitHub.
@@ -44,10 +45,9 @@ set -o pipefail         # Use last non-zero exit code in a pipeline
 #       $util_encrypt: Hash and encrypt password utility.
 function script_init() {
     # Default variables
-    default_repository_dir="ansible_scripts"
-    default_vault_name=".vault_key"
-    default_salt_name=".vault_salt"
-    default_salt=""
+    readonly default_repository_subdir="ansible_scripts"
+    readonly default_vault_name=".vault_key"
+    readonly default_salt_name=".vault_salt"
 
     # Initialization
     install_ansible='true'
@@ -64,17 +64,29 @@ function script_init() {
     readonly script_name="$(basename "${script_path}")"
     readonly script_name_no_ext="${script_name%.*}"
     readonly vault_path="${home_dir}/${default_vault_name}"
+    readonly default_repository_dir="${orig_cwd}/${default_repository_subdir}"
     readonly salt_path="${home_dir}/${default_salt_name}"
-    readonly default_repository_dir="${orig_cwd}/${default_repository_dir}"
-    if [[ -n ${default_salt} ]]; then
-        readonly salt=${default_salt}
-    else
-        readonly salt=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '')
-    fi
+    readonly salt="$(deal_with_salt)"
 
     # Atlernative sources.
     # readonly orig_cwd="$(cd $(dirname '${BASH_SOURCE[0]}') && pwd)"
     # readonly script_name="$(basename $0)""
+}
+
+# DESC: Creating or reading salt for hashing.
+#       If default_salt is empty, then create one, if a file with salt exists, then use it.
+#       Call as: salt="$(deal_with_salt)" or salt="$(deal_with_salt '123')"
+# ARGS: Optional "salt digits".
+# OUTS: RETURNS salt string to be used for hashing.
+function deal_with_salt() {
+    local default_salt="${1:-}"
+
+    [[ -n "${default_salt}" ]] && local salt=${default_salt}
+    [[ -z "${default_salt}" ]] && local salt=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 13 ; echo '')
+    [[ -f "${salt_path}" ]]    && local salt=$(cat ${salt_path})
+    [[ ! -f "${salt_path}" ]]  && printf '%s' "${salt}" > "${salt_path}" && chmod 600 "${salt_path}"
+
+    echo "${salt}"
 }
 
 # DESC: Parameter parser
@@ -118,7 +130,6 @@ function parse_params() {
         if [[ ${install_repository} && -d "${repository_dir}" ]]; then printf "Directory '${repository_dir}' exists. Try another.\n"; exit 1; fi
     fi
 }
-
 
 # DESC: Script usage, when -h, --help are used as an option
 # ARGS: None
@@ -225,14 +236,12 @@ function createVault() {
                     "#      Create secret vault key      #" \
                     "#####################################"
     checkPackage "whois"
-    set -C  # don't overwrite file
-    printf '%s' "${salt}" > ${salt_path}
-    chmod 600 ${salt_path}
     printf "Enter the secret password for the vault. It will be hashed.\n"
+    set -C  # don't overwrite file
 	mkpasswd --method=sha-512 --salt=${salt} | tr -d '\n' > ${vault_path}
     chmod 600 ${vault_path}
     set +C
-    printf '%s\n'   "Remember your password. Otherwise, delete the vault key and salt file, and run this script again." \
+    printf '%s\n'   "Remember your password. Otherwise, delete the vault key file, and run this script again." \
                     "If you don't want to install ansible and the script, use options '-a -r' to skip." \
                     "Secret key stored here '${vault_path}'" \
                     "Secret salt stored here '${salt_path}'" \
@@ -285,20 +294,17 @@ function ansibleEncrypt() {
     # Check that mkpasswd is installed (part of whois)
     checkPackage "whois"
 
-    # Read the secret salt file if it was created (otherwise use the default, set above)
-    [[ -f "${salt_path}" ]] && current_salt=$(cat ${salt_path}) || current_salt=${salt}
-
     # Check that the Ansible Vault key was created.
     if [ -f "${vault_path}" ]; then
         # Password request, hashing and encrypting. Depending on existance of file name after '-e' it will save or show.
         printf "Enter your password here. It will be hashed and encrypted. Remember the password.\n"
-        if [ -n "${encrypted_name}" ]; then
-            mkpasswd --method=sha-512 --salt=${current_salt} | \
+        if [[ -z "${encrypted_name:-}" ]]; then
+            mkpasswd --method=sha-512 --salt=${salt} | \
             tr -d '\n' | \
             ansible-vault encrypt --vault-password-file ${vault_path} | \
             sed '/$ANSIBLE/i \!vault |'
         else
-            mkpasswd --method=sha-512 --salt=${current_salt} | \
+            mkpasswd --method=sha-512 --salt=${salt} | \
             tr -d '\n' | \
             ansible-vault encrypt --vault-password-file ${vault_path} | \
             sed '/$ANSIBLE/i \!vault |' \
@@ -321,7 +327,7 @@ function ansibleEncrypt() {
 # OUTS: None
 function main() {
 
-    script_init "$@"
+    script_init
     parse_params "$@"
 
     header
