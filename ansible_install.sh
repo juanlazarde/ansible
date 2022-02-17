@@ -149,7 +149,7 @@ EOF
 # ARGS: $at_least_one has to be true
 # OUTS: None
 function header() {
-    [[ ! ${at_least_one} ]] && return
+    ! ${at_least_one} && return
     printf '%s\n'   "-----------------------------------" \
                     "Let's install some ansible scripts." \
                     "-----------------------------------" \
@@ -160,7 +160,7 @@ function header() {
 # ARGS: $at_least_one has to be true
 # OUTS: None
 function updatePackages() {
-    [[ ! ${at_least_one} ]] && return
+    ! ${at_least_one} && return
     printf '%s\n'   "#####################################" \
                     "#     Updating apt repositories     #" \
                     "#####################################"
@@ -178,7 +178,7 @@ function updatePackages() {
 # ARGS: $install_ansible has to be true
 # OUTS: None
 function installAnsible() {
-    [[ ! ${install_ansible} ]] && return
+    ! ${install_ansible} && return
     printf '%s\n'   "#####################################" \
                     "# Installing Ansible & dependencies #" \
                     "#####################################"
@@ -207,7 +207,7 @@ function checkPackage() {
 # ARGS: $install_repository has to be true
 # OUTS: None
 function getAnsibleScripts() {
-    [[ ! ${install_repository} ]] && return
+    ! ${install_repository} && return
     printf '%s\n'   "#####################################" \
                     "#      Getting ansible scripts      #" \
                     "#####################################"
@@ -220,7 +220,7 @@ function getAnsibleScripts() {
 # ARGS: $install_vault has to be true
 # OUTS: None
 function createVault() {
-    [[ ! ${install_vault} ]] && return
+    ! ${install_vault} && return
     printf '%s\n'   "#####################################" \
                     "#      Create secret vault key      #" \
                     "#####################################"
@@ -243,7 +243,7 @@ function createVault() {
 # ARGS: $at_least_one has to be true
 # OUTS: None
 function nextSteps() {
-    [[ ! ${at_least_one} ]] && return
+    ! ${at_least_one} && return
     cat << EOF
 
     #####################################"
@@ -271,7 +271,7 @@ EOF
 # ARGS: $util_encrypt has to be true
 # OUTS: None
 function ansibleEncrypt() {
-    [[ ! ${util_encrypt} ]] && return
+    ! ${util_encrypt} && return
     printf '%s\n'   "#####################################" \
                     "#   Encryption with Ansible vault   #" \
                     "#####################################" \
