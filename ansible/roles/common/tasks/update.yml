@@ -1,23 +1,22 @@
 ---
-- name: "update | Will update only if OS: Ubuntu, Debian"
+- name: "update | apt"
+  when: ansible_distribution in ["Ubuntu", "Debian"]
   become: true
   block:
-  - name: "update | update repositories"
-    apt:
-      update_cache: true
-      cache_valid_time: 3600
+    - name: "update | repositories"
+      package:
+        update_cache: true
+        cache_valid_time: 3600
 
-  - name: "update | Upgrade packages"
-    apt:
-      upgrade: dist
-    register: upgrade
-    retries: 5
-    delay: 2
-    until: upgrade is success
+    - name: "update | upgrade"
+      package:
+        upgrade: dist
+      register: upgrade
+      retries: 5
+      delay: 2
+      until: upgrade is success
 
-  - name: "update | Cleanup packages"
-    apt:
-      autoclean: true
-      autoremove: true
-
-  when: ansible_distribution in ["Ubuntu", "Debian"]
+    - name: "update | cleanup"
+      package:
+        autoclean: true
+        autoremove: true

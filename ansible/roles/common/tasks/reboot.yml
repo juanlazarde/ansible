@@ -1,10 +1,11 @@
 ---
-- name: reboot | required?
-  stat: path=/var/run/reboot-required get_md5=no
+- name: "reboot | required?"
+  stat:
+    path: /var/run/reboot-required
+    get_md5: no
   register: reboot_required
 
-- name: reboot | reboot
-  # command: /sbin/reboot
+- name: "reboot | reboot"
   reboot:
     post_reboot_delay: 60
   when: reboot_required.stat.exists == true

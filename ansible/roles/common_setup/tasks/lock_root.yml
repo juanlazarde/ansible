@@ -1,5 +1,5 @@
 ---
-- name: Locking root password
+- name: "lock root | password lock"
   become: true
   user:
     name: root

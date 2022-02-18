@@ -1,11 +1,10 @@
 ---
-- name: "fail2ban | install and setup"
+- name: "fail2ban"
   become: true
-
   vars:
     f2b_fail2ban_local_default_edits: |
       [DEFAULT]
-      ignoreip = 127.0.0.1/8 ::1 {{ my_client_ip }}
+      ignoreip = 127.0.0.1/8 ::1 {{ f2b_unbanned_ip }}
     f2b_jail_local_sshd_edits: |
       [sshd]
       enabled = true
@@ -19,7 +18,6 @@
       - port
       - logpath
       - backend
-
   block:
     - name: "fail2ban | install"
       package:
@@ -66,22 +64,9 @@
         regexp: "^\\[sshd\\]"
         line: "{{ f2b_jail_local_sshd_edits }}"
         state: present
-      # notify: restart fail2ban
 
     - name: "fail2ban | start fail2ban and ensure it starts on a fresh reboot."
       service:
         name: fail2ban
         state: started
         enabled: yes
-      register: error_handler
-      ignore_errors: true
-
-    - name: "fail2ban | handle errors"
-      debug: msg="{{ error_handler.msg }}"
-      when: error_handler.failed
-  
-      # handlers:
-      #   - name: restart fail2ban
-      #     service:
-      #       name: fail2ban
-      #       state: restarted

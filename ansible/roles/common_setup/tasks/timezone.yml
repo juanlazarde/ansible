@@ -1,0 +1,8 @@
+---
+- name: "timezone | {{ timezone }}"
+  become: true
+  timezone:
+    name: "{{ timezone }}"
+
+- name: "timezone | apply"
+  command: dpkg-reconfigure -f noninteractive tzdata

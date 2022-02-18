@@ -3,16 +3,16 @@
 - name: Add identity key to authorized keys on host
   authorized_key:
     user: "{{ ssh_user }}"
-    key: "{{ lookup('file', ssh_identity_key) }}"
+    key: "{{ lookup('file', ssh_filename) }}"
   register: add_identity_key
-  when: ssh_identity_key is defined and ssh_user is defined
+  when: ssh_filename is defined and ssh_user is defined
   # alternatively
   # shell:
   #   cmd: cat {{ssh_filename}}.pub >> ~/.ssh/authorized_keys
 
 - name: Disable empty password login
   lineinfile:
-    dest: "{{ sshd_config }}"
+    dest: "{{ ssh_sshd_config }}"
     regexp: "^((?:(?!#).)*?|^#\\s?)PermitEmptyPasswords\\s(yes|no)"
     line: "PermitEmptyPasswords no"
   notify: restart sshd
@@ -20,7 +20,7 @@
 
 - name: Disable remote root login
   lineinfile:
-    dest: "{{ sshd_config }}"
+    dest: "{{ ssh_sshd_config }}"
     regexp: "^((?:(?!#).)*?|^#\\s?)PermitRootLogin "
     line: "PermitRootLogin no"
   notify: restart sshd
@@ -28,7 +28,7 @@
 
 - name: Disable password login
   lineinfile:
-    dest: "{{ sshd_config }}"
+    dest: "{{ ssh_sshd_config }}"
     regexp: '^((?:(?!#).)*?|^#\\s?)PasswordAuthentication\\s(yes|no)'
     line: "PasswordAuthentication no"
   when:
@@ -40,7 +40,7 @@
 
 - name: Disable challenge response authentication
   lineinfile:
-    dest: "{{ sshd_config }}"
+    dest: "{{ ssh_sshd_config }}"
     regexp: '^((?:(?!#).)*?|^#\\s?)ChallengeResponseAuthentication\\s(yes|no)'
     line: "ChallengeResponseAuthentication no"
   when:
@@ -51,7 +51,7 @@
 
 - name: Enable PAM
   lineinfile:
-    dest: "{{ sshd_config }}"
+    dest: "{{ ssh_sshd_config }}"
     regexp: "^((?:(?!#).)*?|^#\\s?)^#?UsePAM\\s(yes|no)"
     line: "UsePAM yes"
   notify: restart sshd

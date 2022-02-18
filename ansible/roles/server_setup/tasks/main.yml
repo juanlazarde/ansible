@@ -6,8 +6,5 @@
 - name: Loading --> Securing SSH in servers
   import_tasks: secure_ssh.yml
 
-- name: Loading --> Set Timezones
-  import_tasks: timezone.yml
-
 - name: Loading --> Proxmox agent
   import_tasks: qemu_guest_agent.yml

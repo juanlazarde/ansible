@@ -1,6 +1,4 @@
 ---
-# References: https://www.vultr.com/docs/how-to-configure-a-new-ubuntu-server-with-ansible/
-
 - name: "Loading -> Common Update tasks"
   import_tasks: update.yml
 

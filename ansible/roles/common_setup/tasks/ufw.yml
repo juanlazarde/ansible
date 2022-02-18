@@ -1,5 +1,6 @@
 ---
-- become: true
+- name: "firewall"
+  become: true
   block:
     - name: "firewall | install ufw"
       package:
@@ -30,7 +31,6 @@
         - time-exceeded
         - parameter-problem
         - echo-request
-        # - source-quench
 
     - name: "firewall | disable ipv6 ping"
       lineinfile:

@@ -1,4 +1,7 @@
 ---
+- name: Loading --> Set Timezones
+  import_tasks: timezone.yml
+
 - name: "Loading --> Unattended upgrades"
   import_tasks: unattended_upgrades.yml
 
