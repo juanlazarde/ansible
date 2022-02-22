@@ -24,7 +24,7 @@ Ansible scripts are made of *playbooks*. These playbooks include *roles* that:
     - install and configures fail2ban to ban multiple login attempts
     ... for now
 
-These scripts are in an early stage, but work fine on my setup. Post your issues and I'll try to help. I'm sharing this repository, as a lot comes from developers on GitHub and other sources (like YouTube). I'm trying to give back. Most of the material is commented or self-explanatory.
+These scripts are in an early stage, but work fine on my setup. Post your issues and I'll try to help. Most of the material is commented or self-explanatory.
 
 Once installed, your workstation will be 90% ready. I can't think about what the other 10% would be, but I won't say it'll be 100% ready. Open a discussion for more features. Servers have a different story, servers are more like 10% ready to go. They'll be accessible via ansible, with ssh keys, updated, root locked, ufw and fail2ban up and running, super user created and unattended upgrades installed, to name a few. The rest is up to you. Whether it will be a web server, NAS, proxy manager, VPN, etc.
 
@@ -54,7 +54,7 @@ Once installed, your workstation will be 90% ready. I can't think about what the
 - `.\ansible\ansible.cfg` all of ansible's parameters. **If you've installed ansible, Start here**.
 - `.\ansible\hosts.yml` customize your hosts and variables here. (no global_vars or vars around). **Then here.**
 - `.\ansible\playbook.yml` server & workstation plays.
-- `.\ansible\*.sh` lazy bash scripts to speed up typing boring commands.
+- `.\ansible\run.sh` lazy bash script to speed up typing boring commands.
 - `~\.vault_key` this file is outside of the repository (of course!). Holds the keys to the castle. Wherever you see a `!vault |` and garbled text, this is what you need to encrypt/decrypt. Use the `ansible_install.sh` to make this file super easy.
 - `prep_vm.sh` helps prepare VM.
 
@@ -86,7 +86,7 @@ Make the most out of `ansible_install.sh`:
 
     Usage without arguments will install ansible, scripts, and vault key.
 
-    Usage: bash $ansible_install.sh [-a] [-r] [-v] [-e [filename]] [-d directory name] [-h]
+    Usage: bash ansible_install.sh [-a] [-r] [-v] [-e [filename]] [-d directory name] [-h]
 
     Optional arguments:
 
@@ -105,7 +105,11 @@ Edit the following files to meet your needs:
     nano hosts.yml
 
 ### Encryption
-Remember to use the `bash ansible_install.sh -e` command to create encrypted variables, like passwords. To save them to files you can:
+To create hashed and encrypted variables, like passwords, use
+
+    bash ansible_install.sh -e
+
+To save them to files you can:
 
     bash ansible_install.sh -e encrypted_text.txt
 
@@ -144,10 +148,18 @@ Enter the following command to make sure ansible works and that you can connect 
     ansible all -m ping
 
 # Usage
+I've created a `run.sh` bash script to simplify my life. But, you can just as easily write command lines.
+
 ## First, workstation
 The script will update and install workstation-client related items. Including the creation of ansible ssh keys to be sent to the hosts.
 
-    bash workstation_setup.sh
+    bash run.sh workstations setup
+
+**or**
+
+if you've set up the `ansible.cfg` file correctly:
+
+    ansible-playbook playbook.yml -l workstations -t setup
 
 **or**
 
@@ -161,32 +173,35 @@ Notice the following:
 
 Some ansible quirks:
 
-- `Sorry, try again`. May happen if you entered the wrong sudo password. Action -> Hit CTRL+C, run again.
+- `Sorry, try again`. May happen if you've entered the wrong sudo password. Action -> Hit CTRL+C, run again.
 - `reboot` module is not executable for a local connection. Meaning, it won't reboot the workstation with the ansible agent. Action -> `sudo shutdown -r now`
 
 ## Then, deploy the ansible ssh keys to all servers-hosts.
 It's very helpful, recommended even, to create an 'ansible' SSH key pair in the workstation-client. Then Distribute the public key to all the hosts, and save it to the authorized key file. This way your ansible plays will establish a valid connection to each host, do their job, and get out.
 
-    bash deploy_ansible_ssh.sh
+    bash run.sh --deploy-ssh
 
 ## Finally, setup all server.
 These are all the plays to be applied to the server group only. These are the remote hosts, like Apache, TrueNas, reverse-proxy, etc.
 
-    bash server_setup.sh
+    bash run.sh servers setup
 
 **or**
 
     ansible-playbook playbook.yml -i hosts.yml --ask-become-pass --vault-password-file ~/.vault_key -l "servers" -t "setup"
 
 ## Dry runs or checks without impact or changes to the system.
-You'll need to include the flag `-C` a the end of the ansible command.
-For extra verbose youll add `-vvv` to the command. i.e.
+You'll need to include the flag `-C` with the ansible command. For extra verbosity you'll add `-vvv` to the command. i.e.
 
     ansible-playbook playbook.yml -i hosts.yml --ask-become-pass --vault-password-file ~/.vault_key -l "workstations" -t "setup" -C -vvv
 
+**or**
+
+    bash sun.sh workstations setup --debug
+
 
 # Tags and Limits
-To target workstations only, use the arguments `-l "workstations"`, for servers `-l "servers"`.
+To target 'workstations' only, use the arguments `-l "workstations"`, for servers `-l "servers"`.
 
 To run setups only, use `-t "setup"`, for updates `-t "update"`, for ssh deployment `-t "ssh"`
 
@@ -264,6 +279,9 @@ Evaluate a variable with a dummy tasK:
     - name: Debugging
       debug: msg="{{ some.variable}}"
 
+**also**
+
+    bash run.sh workstations setup --start-at-task="test" --step --debug
 
 # Bonus - Prepare the VM
 When creating a VM template for i.e. Proxmox, it's recommended to prepare the current session. Here's a script that will help set some of these out.
