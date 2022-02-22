@@ -100,7 +100,7 @@ Make the most out of `ansible_install.sh`:
 ## Configure the installation
 Edit the following files to meet your needs:
 
-    cd ansible_scripts
+    cd ansible_scripts/ansible
     nano ansible.cfg
     nano hosts.yml
 
@@ -133,6 +133,8 @@ But, we'll need to edit it to adjust the proper YAML format. In example:
     sudo_ssh_passphrase: !vault |
         $ANSIBLE_VAULT;1.1;AES256
         376563383...
+
+Watch for any spaces in wrong places, trim trailing spaces.
 
 So,
 

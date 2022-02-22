@@ -3,6 +3,8 @@
   become: true
   timezone:
     name: "{{ timezone }}"
+  register: timezone_changed
 
 - name: "timezone | apply"
+  when: timezone_changed.changed
   command: dpkg-reconfigure -f noninteractive tzdata

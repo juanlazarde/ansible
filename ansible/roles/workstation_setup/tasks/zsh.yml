@@ -58,6 +58,7 @@
 
     - name: "zsh & oh-my-zsh | create .zshrc"
       copy:
+        remote_src: yes
         src: "{{ omz_path }}/templates/zshrc.zsh-template"
         dest: "{{ owner_path }}/.zshrc"
         owner: "{{ sudo_user }}"

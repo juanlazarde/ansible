@@ -13,8 +13,6 @@
 # plays for remote hosts
 - name: SERVERS
   hosts: servers
-  become: false
-  gather_facts: false
   roles:
   - role: common
     tags: [ setup, update ]
@@ -26,9 +24,7 @@
 # plays for workstations and local machines
 - name: WORKSTATIONS
   hosts: workstations
-  become: false
   connection: local
-  gather_facts: false
   roles:
   - role: common
     tags: [ setup, update ]

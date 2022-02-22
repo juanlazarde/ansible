@@ -27,7 +27,7 @@ while [[ "$#" -gt 0 ]]; do
         --deploy-ssh)       limit="--limit servers"; tags="--tags ssh" ;;
         --debug)            debug="--check -vvv" ;;
         --step)             step="--step" ;;
-        --start-at-task)    start_at_task="--start-at-task '${2-}'"; shift ;;
+        --start-at-task)    start_at_task="--start-at-task ${2-}"; shift ;;
         --help|-h|/h)       usage; exit 0 ;;
     esac
     shift

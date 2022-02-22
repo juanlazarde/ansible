@@ -26,6 +26,7 @@
 
     - name: "fail2ban | fail2ban.conf to .local backup"
       copy:
+        remote_src: yes
         src: /etc/fail2ban/fail2ban.conf
         dest: /etc/fail2ban/fail2ban.local
 
@@ -48,6 +49,7 @@
 
     - name: "fail2ban | jail.conf to .local backup"
       copy:
+        remote_src: yes
         src: /etc/fail2ban/jail.conf
         dest: /etc/fail2ban/jail.local
 
