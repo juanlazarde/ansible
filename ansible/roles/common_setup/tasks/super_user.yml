@@ -12,7 +12,7 @@
     append: yes
 
 - name: "super user | add to sudoers"
-  linefile:
+  lineinfile:
     create: true
     backup: yes
     path: "/etc/sudoers.d/{{ sudo_user }}"
