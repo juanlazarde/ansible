@@ -1,13 +1,6 @@
 ---
 # Reference by: https://github.com/jnv/ansible-role-unattended-upgrades
 
-- name: "unattended-upgrades | distribution-specific variables"
-  include_vars: "{{ ansible_distribution }}.yml"
-
-- name: "unattended-upgrades | add Debian Wheezy/Bullseye workaround"
-  include_vars: "{{ ansible_distribution }}-{{ ansible_distribution_release }}.yml"
-  when: (ansible_distribution == "Debian") and (ansible_distribution_release == ["wheezy", "bullseye"])
-
 - become: true
   block:
     - name: "unattended-upgrades | install"

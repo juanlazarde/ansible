@@ -1,23 +1,26 @@
 ---
 # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/user_module.html
 
-- name: "super user | create user '{{ sudo_user }}'"
+- name: "super user"
   become: true
-  user:
-    name: "{{ sudo_user }}"
-    password: "{{ sudo_password }}"
-    shell: /bin/bash
-    groups: sudo
-    state: present
-    append: yes
+  block:
+    - name: "super user | create user '{{ sudo_user }}'"
+      user:
+        name: "{{ sudo_user }}"
+        password: "{{ sudo_password }}"
+        shell: /bin/bash
+        groups: sudo
+        state: present
+        append: yes
 
-- name: "super user | add to sudoers"
-  lineinfile:
-    create: true
-    backup: yes
-    path: "/etc/sudoers.d/{{ sudo_user }}"
-    line: "{{ sudo_user }}  ALL=(ALL)  NOPASSWD: ALL"
-    mode: 0440
-    owner: root
-    group: root
-    validate: visudo -cf "/etc/sudoers.d/{{ sudo_user }}"
+    - name: "super user | add to sudoers.d"
+      lineinfile:
+        create: true
+        backup: yes
+        path: "/etc/sudoers.d/{{ sudo_user }}"
+        line: "{{ sudo_user }}  ALL=(ALL)  NOPASSWD: ALL"
+        mode: 0440
+        owner: root
+        group: root
+        validate: "visudo -cf /etc/sudoers.d/{{ sudo_user }}"
+

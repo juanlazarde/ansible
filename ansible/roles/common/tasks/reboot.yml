@@ -6,6 +6,6 @@
   register: reboot_required
 
 - name: "reboot | reboot"
+  when: reboot_required.stat.exists == true
   reboot:
     post_reboot_delay: 60
-  when: reboot_required.stat.exists == true
