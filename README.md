@@ -6,7 +6,7 @@
 
 These scripts help setup and update your workstation and servers with Ansible agent-less package, so nothing is installed in the servers!
 
-Ansible scripts are made of *playbooks*. These playbooks include *roles* that:
+Ansible scripts are made of *playbooks*. These playbooks include *plays* that:
 
     - update and upgrade all packages, rebooting if needed
     - install unattended-upgrade packages
@@ -14,7 +14,7 @@ Ansible scripts are made of *playbooks*. These playbooks include *roles* that:
     - disable root passwords
     - disable remote root logins
     - create SSH key pairs, updating remote hosts with the public key
-    - install zsh, oh-my-zsh, with powerlevel9k and custom plugins, and sets the default shell
+    - install zsh, oh-my-zsh, with powerlevel10k and custom plugins, and sets the default shell
     - remove Ubuntu's Snap services and leave-behinds
     - maximize LVM partitions
     - customize the hostname
@@ -26,44 +26,46 @@ Ansible scripts are made of *playbooks*. These playbooks include *roles* that:
 
 These scripts are in an early stage, but work fine on my setup. Post your issues and I'll try to help. Most of the material is commented or self-explanatory.
 
-Once installed, your workstation will be 90% ready. I can't think about what the other 10% would be, but I won't say it'll be 100% ready. Open a discussion for more features. Servers have a different story, servers are more like 10% ready to go. They'll be accessible via ansible, with ssh keys, updated, root locked, ufw and fail2ban up and running, super user created and unattended upgrades installed, to name a few. The rest is up to you. Whether it will be a web server, NAS, proxy manager, VPN, etc.
+Once installed, your workstation will be 90% ready. I can't think about what the other 10% would be, but I won't say it'll be 100% ready. Open a discussion for more features. Servers have a different story, servers are more like 10% ready to go. They'll be accessible via ansible, with ssh keys, updated, root-locked, ufw and fail2ban up and running, super user created and unattended upgrades installed, to name a few. The rest is up to you. Whether it will be a web server, NAS, proxy manager, VPN, etc. Feel free to open a discussion on what specific servers would be most helpful.
 
-**The code here, will not run out-of-the-box**. You need to configure a couple of files listed below (ansible.cfg, hosts.yml).
+**The code here, will not run out-of-the-box**. You need to configure hosts.yml and possibly ansible.cfg.
 
 # Table of Contents
 - [Contents](#contents)
 - [Install](#install)
+- [Install TL;DR](#installtldr)
 - [Usage](#usage)
 - [Debug](#debug)
 
 # My setup
 - Bare metal rack server.
-- Proxmox Hypervisor
-- Multple VM's and LXD's
-- Workstation is a Windows 10 with Ubuntu WSL
-- Testing all on Virtualbox VM's
-- Mostly using Ubuntu or light-weight debian/Ubuntu versions
+- Proxmox Hypervisor.
+- Multple VM's and LXD's.
+- Workstation is a Windows 10 with Ubuntu WSL.
+- Testing all on Virtualbox VM's.
+- Mostly using Ubuntu or lightweight variant.
 
 # Supported platforms
-- Ubuntu 20.04 LTS
-- Windows WSL Ubuntu 20.04
+- Ubuntu 20.04 LTS.
+- Windows WSL Ubuntu 20.04.
 
 # Contents
-- `ansible_install.sh` bash to install ansible, clone this repository, install vault key, and encrypt secrets. **Start here**
-- `.\ansible` has ansible scripts, configs, playbooks, hosts, & roles.
-- `.\ansible\ansible.cfg` all of ansible's parameters. **If you've installed ansible, Start here**.
-- `.\ansible\hosts.yml` customize your hosts and variables here. (no global_vars or vars around). **Then here.**
-- `.\ansible\playbook.yml` server & workstation plays.
-- `.\ansible\run.sh` lazy bash script to speed up typing boring commands.
+- `ansible_install.sh` bash to install ansible, clone locally this repository, install vault key, and encrypt secrets. **Start here**
+- `.\ansible` directory has ansible scripts, configs, playbooks, hosts, and roles.
+- `.\ansible\ansible.cfg` all of ansible's parameters.
+- `.\ansible\hosts.yml` customize your hosts and variables here. I didn't creaete global_vars or vars.
+- `.\ansible\deploy_ssh.yml` playbook that creates ssh key pairs ans deploys to hosts.
+- `.\ansible\playbook.yml` playbook that makes everything happen.
+- `.\ansible\run.sh` lazy bash script to speed up typing boring commands. This would be your quarterback for the plays.
 - `~\.vault_key` this file is outside of the repository (of course!). Holds the keys to the castle. Wherever you see a `!vault |` and garbled text, this is what you need to encrypt/decrypt. Use the `ansible_install.sh` to make this file super easy.
-- `prep_vm.sh` helps prepare VM.
+- `prep_vm.sh` helps prepare VM. I.e. removes machine-id, etc.
 
 # Install
 Download the installation script: `ansible_install.sh` by running this line:
     
     curl -LJO https://raw.githubusercontent.com/juanlazarde/ansible_homelab/main/ansible_install.sh
 
-**or** get  `ansible_install.sh` [here](ansible_install.sh) and save it as `ansible_install.sh`.
+**or** get  `ansible_install.sh` [here](ansible_install.sh) and save it raw as `ansible_install.sh`.
  
  Run as:
 
@@ -86,7 +88,7 @@ Make the most out of `ansible_install.sh`:
 
     Usage without arguments will install ansible, scripts, and vault key.
 
-    Usage: bash ansible_install.sh [-a] [-r] [-v] [-e [filename]] [-d directory name] [-h]
+    Usage: bash ansible_install.sh [[-a] [-r] [-v] | [-e [FILENAME]] [-d DIRECTORY] [-h]
 
     Optional arguments:
 
@@ -113,7 +115,12 @@ To save them to files you can:
 
     bash ansible_install.sh -e encrypted_text.txt
 
-Now you'll need to copy this text and paste it to the `hosts.yml` file for example. When you can't copy/paste, here's a solution. Feel free to offer other ideas or request a better solution through the issue tracker:
+Now you'll need to copy this text and paste it to the `hosts.yml` file for example. When you can't copy/paste, here're a couple of ways we can do this. Feel free to offer other ideas or request a better solution through the issue tracker. 
+1. Insert text into hosts.yml.
+2. Pull encrypted file directly in the task.
+
+#### 1. Insert text into hosts.yml
+Run this command:
 
     sed -i.bak "/sudo_ssh_passphrase:/r encrypted_text.txt" ~/ansible_scripts/ansible/hosts.yml
 
@@ -144,16 +151,56 @@ Remember to delete the `encrypted_text.txt`:
 
     rm encrypted_text.txt
 
+#### 2. Pull the encrypted text directly from the file.
+Insert the follwing line where the info is required:
+
+    "{{ lookup('file', './encrypted_text.txt', errors='warn') }}"
+
 ## Check connection to hosts
 Enter the following command to make sure ansible works and that you can connect to your hosts:
     
     ansible all -m ping
 
+## <a name="installtldr"></a>TL;DR
+Download
+
+    curl -LJO https://raw.githubusercontent.com/juanlazarde/ansible_homelab/main/ansible_install.sh
+
+Install
+
+    bash ansible_install.sh
+    cd ansible_scripts
+
+Configure
+
+    bash ansible_install.sh -e >> /ansible_scripts/ansible/hosts.yml
+    cd ansible
+
+Test
+
+    bash run.sh workstations setup --debug --step
+
+Run
+
+    bash run.sh workstations setup 
+
 # Usage
 I've created a `run.sh` bash script to simplify my life. But, you can just as easily write command lines.
 
-## First, workstation
-The script will update and install workstation-client related items. Including the creation of ansible ssh keys to be sent to the hosts.
+## Create and deploy SSH key pair
+Start here, to make sure there's a proper connection to the hosts.
+
+    cd ~/ansible_scripts/ansible
+    bash run.sh --deploy-ssh
+
+get help with `bash run.sh --help`.
+
+It will ask for several passwords. First, is the localhost sudo password. Then, it will ask for the remote user's SSH password (usually the same as the user's password); typically, this user and password is the same for all hosts. Lastly, it'll ask for a remote sudo password, usually pressing ENTER will do it.
+
+This will create a passwordless private and public key in your local `~/.ssh/` directory, then it will connect to all other hosts and will push the public key to their `~/.ssh/authorized_keys`. You can then test it by `ssh -i ~/.ssh/<ansible key> <remote_user>@<host_ip>` and it shouldn't ask for a password. Success!
+
+## Next, workstation
+The script will update and install workstation-client related items. These 'workstation' plays can be applied to the computer you're on; a.k.a. localhost, or to a remote host.
 
     bash run.sh workstations setup
 
