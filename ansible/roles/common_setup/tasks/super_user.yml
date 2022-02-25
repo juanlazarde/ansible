@@ -1,26 +1,34 @@
 ---
-# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/user_module.html
-
-- name: "super user"
+- name: "super user | create '{{ local_user }}'"
   become: true
-  block:
-    - name: "super user | create user '{{ sudo_user }}'"
-      user:
-        name: "{{ sudo_user }}"
-        password: "{{ sudo_password }}"
-        shell: /bin/bash
-        groups: sudo
-        state: present
-        append: yes
+  ansible.builtin.user:
+    name: "{{ local_user }}"
+    password: "{{ local_password }}"
+    # password: "{{ local_password | password_hash('sha512') }}"
+    create_home: true
+    shell: /bin/bash
+    groups: sudo
+    state: present
+    append: true
+    comment: "sudo user common to all installs"
+    force: false
+    generate_ssh_key: true
+    ssh_key_file: "~/.ssh/{{ ssh_filename }}"
+    ssh_key_passphrase: "{{ local_password }}"
+    ssh_key_type: "{{ ssh_encryption }}"
+    ssh_key_comment: "{{ local_user }} key"
 
-    - name: "super user | add to sudoers.d"
-      lineinfile:
-        create: true
-        backup: yes
-        path: "/etc/sudoers.d/{{ sudo_user }}"
-        line: "{{ sudo_user }}  ALL=(ALL)  NOPASSWD: ALL"
-        mode: 0440
-        owner: root
-        group: root
-        validate: "visudo -cf /etc/sudoers.d/{{ sudo_user }}"
-
+- name: "super user | add to sudoers.d"
+  become: true
+  ansible.builtin.lineinfile:
+    create: true
+    backup: yes
+    mode: 0440
+    owner: root
+    group: root
+    validate: "visudo -cf %s"
+    path: "/etc/sudoers.d/added"
+    line: "{{ item }}"
+  loop:
+    - "{{ local_user }}  ALL=(ALL)  NOPASSWD: ALL"
+    - "Defaults timestamp_timeout={{ sudo_timeout }}"

@@ -1,0 +1,77 @@
+---
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   @file        :  deploy_ssh.yml
+#   @description :  creates SSH key pair at localhost, and sends out public key to the servers.
+#   @usage       :  Step 1. Create SSH keypair: ansible-playbook deploy_ssh.yml --limit localhost
+#                :  Step 2. Deploy SSH pub key: ansible-playbook deploy_ssh.yml --ask-pass --limit "all:\!localhost"
+#
+#   @test        : ssh -i ~/.ssh/<<ans_ssh_filename> <username>@<host_ip>
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Workstation will create key.
+- name: "create | SSH key pairs live in the workstation"
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  become: false
+  tasks:
+    - name: "create | install dependencies"
+      become: true
+      ansible.builtin.package:
+        state: present
+        name:
+          - sshpass
+          - openssh-client
+
+    - name: "create | ~/.ssh local directory"
+      ansible.builtin.file:
+        path: "~/.ssh"
+        state: directory
+        mode: "0700"
+
+    - name: "create | key"
+      ansible.builtin.user:
+        name: "{{ local_user }}"
+        generate_ssh_key: true
+        ssh_key_file: "~/.ssh/{{ ans_ssh_filename }}"
+        ssh_key_passphrase: "{{ ans_ssh_passphrase }}"
+        ssh_key_type: "{{ ssh_encryption }}"
+        ssh_key_comment: "{{ ans_ssh_filename }} key"
+        force: false
+
+    - name: "create | secure key for {{ local_user }}"
+      ansible.builtin.user:
+        name: "{{ local_user }}"
+        generate_ssh_key: true
+        ssh_key_file: "~/.ssh/{{ ssh_filename }}"
+        ssh_key_passphrase: "{{ local_password }}"
+        ssh_key_type: "{{ ssh_encryption }}"
+        ssh_key_comment: "{{ local_user }} key"
+        force: false
+
+    - name: "create | .ssh files maintenance"
+      ansible.builtin.shell: sort --unique -o ~/.ssh/{{ item }}{,}
+      ignore_errors: true
+      loop:
+        - "authorized_keys"
+        - "known_hosts"
+
+# SSH key deployed to corresponding authorized_key files in each host.
+- name: "deploy | key to hosts"
+  hosts: all:!localhost
+  gather_facts: false
+  become: false
+  remote_user: "{{ guest_user }}"
+  tasks:
+    - name: "deploy | set authorized key"
+      ansible.posix.authorized_key:
+        user: "{{ guest_user }}"
+        state: present
+        key: "{{ lookup('file', '~/.ssh/{{ ans_ssh_filename }}.pub') }}"
+
+    - name: "deploy | .ssh files maintenance"
+      ansible.builtin.shell: sort --unique -o ~/.ssh/{{ item }}{,}
+      ignore_errors: true
+      loop:
+        - "authorized_keys"
+        - "known_hosts"

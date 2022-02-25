@@ -11,24 +11,30 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 # plays for remote hosts
-- name: SERVERS
+- name: server-plays
   hosts: servers
   roles:
-  - role: common
-    tags: [ setup, update ]
-  - role: common_setup
-    tags: [ setup ]
-  - role: server_setup
-    tags: [ setup ]
+    - role: common
+      tags: [setup, update]
+    - role: common_setup
+      tags: [setup]
+    - role: server_setup
+      tags: [setup]
+    - role: wrapit
+      tags: [setup, update]
 
 # plays for workstations and local machines
-- name: WORKSTATIONS
+- name: workstation-plays
   hosts: workstations
-  connection: local
+  remote_user: "{{ guest_user }}"
+  gather_facts: true
+  # connection: local
   roles:
-  - role: common
-    tags: [ setup, update ]
-  - role: common_setup
-    tags: [ setup ]
-  - role: workstation_setup
-    tags: [ setup ]
+    - role: common
+      tags: [setup, update]
+    - role: common_setup
+      tags: [setup]
+    - role: workstation_setup
+      tags: [setup]
+    - role: wrapit
+      tags: [setup, update]

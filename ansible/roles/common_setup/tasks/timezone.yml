@@ -1,10 +1,10 @@
 ---
 - name: "timezone | {{ timezone }}"
   become: true
-  timezone:
+  community.general.timezone:
     name: "{{ timezone }}"
   register: timezone_changed
 
 - name: "timezone | apply"
   when: timezone_changed.changed
-  command: dpkg-reconfigure -f noninteractive tzdata
+  ansible.builtin.shell: dpkg-reconfigure -f noninteractive tzdata

@@ -4,20 +4,20 @@
   become: true
   block:
     - name: "assign hostname | comment current"
-      replace:
-        path: /etc/hosts
+      ansible.builtin.replace:
+        path: "/etc/hosts"
         regexp: "(^127\\.0\\.1\\.1.*)"
         replace: "# \\1"
 
     - name: "assign hostname | add"
-      lineinfile:
-        path: /etc/hosts
+      ansible.builtin.lineinfile:
+        path: "/etc/hosts"
         insertafter: "# 127.0.1.1"
         line: "127.0.1.1    {{ my_name }}"
         state: present
 
     - name: "assign hostname | static"
-      hostname:
+      ansible.builtin.hostname:
         name: "{{ my_name }}"
       register: error_handler
       ignore_errors: true

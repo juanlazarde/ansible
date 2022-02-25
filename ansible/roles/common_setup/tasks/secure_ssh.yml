@@ -1,0 +1,62 @@
+# reference: https://github.com/vitalk/ansible-secure-ssh/
+---
+- name: "secure ssh"
+  vars:
+    ssh_sshd_config: "/etc/ssh/sshd_config"
+  block:
+    - name: "secure ssh | authorized key"
+      ansible.builtin.authorized_key:
+        user: "{{ guest_user }}"
+        key: "{{ lookup('file', '~/.ssh/' + item + '.pub') }}"
+      loop:
+        - "{{ ssh_filename }}"
+        - "{{ ans_ssh_filename }}"
+      when: item is defined and guest_user is defined
+      register: add_identity_key
+
+    - name: "secure ssh | authorized_keys maintenance"
+      ansible.builtin.shell: sort --unique -o ~/.ssh/authorized_keys{,}
+
+    - name: "secure ssh | edit {{ ssh_sshd_config }}"
+      lineinfile:
+        path: "{{ ssh_sshd_config }}"
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      loop:
+        - { 
+            regexp: "Port ",
+            line: "Port {{ ssh_port }}"
+          }
+        - {
+            regexp: "^((?:(?!#).)*?|^#\\s?)PermitEmptyPasswords\\s(yes|no)",
+            line: "PermitEmptyPasswords no",
+          }
+        - {
+            regexp: "^((?:(?!#).)*?|^#\\s?)PermitRootLogin ",
+            line: "PermitRootLogin no",
+          }
+        - {
+            regexp: "^((?:(?!#).)*?|^#\\s?)ChallengeResponseAuthentication\\s(yes|no)",
+            line: "ChallengeResponseAuthentication no",
+          }
+        - {
+            regexp: "^((?:(?!#).)*?|^#\\s?)^#?UsePAM\\s(yes|no)",
+            line: "UsePAM yes",
+          }
+        # consider: ^#?PermitEmptyPasswords
+        # consider "^#?PermitRootLogin "
+        # consider: "^(#\s*)?ChallengeResponseAuthentication "
+        # consider: "^#?UsePAM "
+      notify: restart_sshd
+
+    - name: "secure ssh | disable password login"
+      lineinfile:
+        path: "{{ ssh_sshd_config }}"
+        regexp: "^((?:(?!#).)*?|^#\\s?)PasswordAuthentication\\s(yes|no)"
+        # consider: "^(#  *)?PermitRootLogin (yes|no)"
+        # consider: "^(#\s*)?PasswordAuthentication "
+        line: "PasswordAuthentication no"
+      when:
+        - add_identity_key is succeeded
+        - not add_identity_key is skipped
+      notify: restart_sshd

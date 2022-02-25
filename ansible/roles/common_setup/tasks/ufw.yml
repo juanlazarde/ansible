@@ -3,12 +3,12 @@
   become: true
   block:
     - name: "firewall | install ufw"
-      package:
+      ansible.builtin.package:
         name: ufw
         state: present
 
     - name: "firewall | reset"
-      ufw:
+      ansible.builtin.ufw:
         state: reset
 
     # - name: "firewall | allow ovh ping"
@@ -18,27 +18,27 @@
     #     line: "-A ufw-before-input -p icmp -s {{ item }} -j ACCEPT"
     #     insertafter: "^# ok icmp codes"
     #     backup: yes
-    #   with_items: ovh_hosts
+    #   loop: ovh_hosts
 
     - name: "firewall | disable ping"
-      lineinfile:
+      ansible.builtin.lineinfile:
         dest: /etc/ufw/before.rules
         regexp: "^[^#]*?ufw-before-input.*--icmp-type {{ item }}"
         line: "-A ufw-before-input -p icmp --icmp-type {{ item }} -j DROP"
         backup: yes
-      with_items:
+      loop:
         - destination-unreachable
         - time-exceeded
         - parameter-problem
         - echo-request
 
     - name: "firewall | disable ipv6 ping"
-      lineinfile:
+      ansible.builtin.lineinfile:
         dest: /etc/ufw/before6.rules
         regexp: "^[^#]*?ufw6-before-input.*--icmpv6-type {{ item }}"
         line: "-A ufw6-before-input -p icmpv6 --icmpv6-type {{ item }} -j DROP"
         backup: true
-      with_items:
+      loop:
         - destination-unreachable
         - packet-too-big
         - time-exceeded
@@ -46,18 +46,22 @@
         - echo-request
 
     - name: "firewall | IPv6"
-      lineinfile:
+      ansible.builtin.lineinfile:
         name: /etc/default/ufw
         regexp: "^IPV6="
         line: "IPV6=yes"
         backup: true
 
     - name: "firewall | allow port '{{ ssh_port }}'"
-      ufw:
+      ansible.builtin.ufw:
         rule: allow
         proto: tcp
         port: "{{ ssh_port }}"
 
-    - name: "firewall | enable firewall"
-      ufw:
+    - name: "firewall | enable"
+      ansible.builtin.ufw:
         state: enabled
+
+    # - name: Turn UFW logging off
+    #   ufw:
+    #     logging: "off"

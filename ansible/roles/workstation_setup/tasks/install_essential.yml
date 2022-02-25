@@ -1,12 +1,14 @@
 ---
-- name: "install essential | install"
+- name: "install essential"
   become: true
-  package:
+  ansible.builtin.package:
+    state: present
     name:
       - build-essential
-      - needrestart
-      # - pwgen
-      # - resolvconf
-      # - unbound
-      - unzip
-    state: latest
+
+- name: "install optional"
+  become: true
+  ansible.builtin.package:
+    state: present
+    name: "{{ item }}"
+  loop: "{{ optional_packages }}"

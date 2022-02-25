@@ -1,15 +1,18 @@
 ---
-- name: Loading --> Set Timezones
-  import_tasks: timezone.yml
-
-- name: "Loading --> Unattended upgrades"
-  import_tasks: unattended_upgrades.yml
-
 - name: "Loading --> Super User addition"
   import_tasks: super_user.yml
 
 - name: "Loading --> Root lockout"
   import_tasks: lock_root.yml
+
+- name: "Loading --> Securing SSH in servers"
+  import_tasks: secure_ssh.yml
+
+- name: "Loading --> Set Timezones"
+  import_tasks: timezone.yml
+
+- name: "Loading --> Unattended upgrades"
+  import_tasks: unattended_upgrades.yml
 
 - name: "Loading --> Snap removal"
   import_tasks: remove_snap.yml

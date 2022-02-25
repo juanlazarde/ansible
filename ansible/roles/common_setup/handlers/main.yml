@@ -1,0 +1,10 @@
+---
+- name: restart_sshd
+  ansible.builtin.service:
+    name: sshd
+    state: restarted
+
+- name: restart_fail2ban
+  ansible.builtin.service:
+    name: fail2ban
+    state: restarted

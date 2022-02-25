@@ -1,6 +1,13 @@
 ---
-- name: "Loading -> Common Update tasks"
-  import_tasks: update.yml
+- name: "update | repositories"
+  ansible.builtin.package:
+    update_cache: true
+    cache_valid_time: 3600
 
-- name: "Loading -> Reboot after a full update and upgrade, if needed"
-  import_tasks: reboot.yml
+- name: "update | upgrade"
+  ansible.builtin.package:
+    upgrade: dist
+  register: upgrade
+  retries: 5
+  delay: 2
+  until: upgrade is success

@@ -1,28 +1,53 @@
 ---
-- name: "ssh keypair | create"
-  become: true
-  user:
-    name: "{{ sudo_user }}"
-    generate_ssh_key: yes
-    ssh_key_type: "{{ ssh_key_type }}"
-    ssh_key_passphrase: "{{ ssh_passphrase }}"
-    ssh_key_file: ".ssh/{{ ssh_filename }}"
-    ssh_key_comment: "{{ ssh_filename }} key"
+- name: "ssh keypair | SSH key pairs live in the workstation"
+  become: false
+  vars:
+    ssh_dir: "~/.ssh"
+  block:
+    - name: "ssh keypair | install dependencies"
+      ansible.builtin.package:
+        state: present
+        name:
+          - sshpass
+          - openssh-client
 
-# - name: "ssh keypair | 'ssha' alias for frequent SSH logins w/o password"
-#   become: true
-#   blockinfile:
-#     path: "{{ item }}"
-#     create: true
-#     owner: "{{ sudo_user }}"
-#     group: "{{ sudo_user }}"
-#     mode: 0644
-#     block: |
+    - name: "ssh keypair | {{ ssh_dir }} local directory"
+      ansible.builtin.file:
+        path: "{{ ssh_dir }}"
+        state: directory
+        mode: "0700"
 
-#       # Alias to request SSH password only once per session
-#       alias ssha='eval $(ssh-agent -s) && ssh-add ~/.ssh/{{ ssh_filename }}'
-#   with_items:
-#     - "/home/{{ sudo_user }}/.bashrc"
-#     - "/home/{{ sudo_user }}/.zshrc"
-# # shell:
-# #   cmd: echo ""alias ssha='eval $(ssh-agent -s) && ssh-add {{ ssh_filename_private }}'"" >> ~/.zshrc >> ~/.bashrc
+    - name: "ssh keypair | create key"
+      ansible.builtin.user:
+        name: "{{ guest_user }}"
+        generate_ssh_key: true
+        ssh_key_file: "{{ ssh_dir }}/{{ ssh_filename }}"
+        ssh_key_passphrase: "{{ guest_password }}"
+        ssh_key_type: "{{ ssh_encryption }}"
+        ssh_key_comment: "{{ ssh_filename }} key"
+        state: present
+        force: false
+
+    - name: "ssh pair | .ssh files maintenance"
+      ansible.builtin.shell: sort --unique -o {{ ssh_dir }}/{{ item }}{,}
+      ignore_errors: true
+      loop:
+        - "authorized_keys"
+        - "known_hosts"
+
+    - name: "ssh keypair | 'ssha' alias for frequent SSH logins w/o password"
+      become: true
+      ansible.builtin.blockinfile:
+        path: "/home/{{ local_user }}/{{ item }}"
+        create: true
+        owner: "{{ local_user }}"
+        group: "{{ local_user }}"
+        mode: 0644
+        block: |
+          #
+          # Alias to request SSH password only once per session
+          alias ssha='eval $(ssh-agent -s) && ssh-add ~/.ssh/{{ ssh_filename }}'
+          #
+      loop:
+        - ".bashrc"
+        - ".zshrc"

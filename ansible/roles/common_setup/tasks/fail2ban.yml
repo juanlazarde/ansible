@@ -14,61 +14,57 @@
       filter = sshd
       logpath = /var/log/auth.log
       backend = systemd
-    f2b_jail_local_sshd_commented:
-      - port
-      - logpath
-      - backend
   block:
     - name: "fail2ban | install"
-      package:
+      ansible.builtin.package:
         name: fail2ban
-        state: present
+        state: latest
 
-    - name: "fail2ban | fail2ban.conf to .local backup"
-      copy:
-        remote_src: yes
-        src: /etc/fail2ban/fail2ban.conf
-        dest: /etc/fail2ban/fail2ban.local
+    - name: "fail2ban | when config files exist"
+      block:
+        - name: "fail2ban | copy settings"
+          ansible.builtin.copy:
+            remote_src: yes
+            src: "/etc/fail2ban/{{ item.src }}"
+            dest: "/etc/fail2ban/{{ item.dest }}"
+          loop:
+            - { src: fail2ban.conf, dest: fail2ban.local }
+            - { src: jail.conf, dest: jail.local }
+        
+        - name: "fail2ban | edit fail2ban.local"
+          ansible.builtin.lineinfile:
+            state: present
+            path: /etc/fail2ban/fail2ban.local
+            regexp: "{{ item.regexp }}"
+            line: "{{ item.line }}"
+          loop:
+            - { regexp: "^\\[DEFAULT\\]", line: "{{ f2b_fail2ban_local_default_edits }}" }
+            - { regexp: "^loglevel", line: "loglevel = INFO" }
+            - { regexp: "^logtarget", line: "logtarget = /var/log/fail2ban.log" }
 
-    - name: "fail2ban | edit ignoreIP in fail2ban.local"
-      lineinfile:
-        path: /etc/fail2ban/fail2ban.local
-        regexp: "^\\[DEFAULT\\]"
-        line: "{{ f2b_fail2ban_local_default_edits }}"
-        state: present
+        - name: "fail2ban | comments out in jail.local"
+          ansible.builtin.replace:
+            path: /etc/fail2ban/jail.local
+            regexp: "(^\\[sshd\\][\\s\\S]*?)({{ item }})"
+            replace: "\\1#{{ item }}"
+          loop:
+            - port
+            - logpath
+            - backend
 
-    - name: "fail2ban | edit logs in fail2ban.local"
-      lineinfile:
-        path: /etc/fail2ban/fail2ban.local
-        regexp: "{{ item.from }}"
-        line: "{{ item.to }}"
-        state: present
-      with_items:
-        - { from: "^loglevel", to: "loglevel = INFO"}
-        - { from: "^logtarget", to: "logtarget = /var/log/fail2ban.log"}
+        - name: "fail2ban | edit sshd in jail.local"
+          ansible.builtin.lineinfile:
+            state: present
+            path: /etc/fail2ban/jail.local
+            regexp: "^\\[sshd\\]"
+            line: "{{ f2b_jail_local_sshd_edits }}"
 
-    - name: "fail2ban | jail.conf to .local backup"
-      copy:
-        remote_src: yes
-        src: /etc/fail2ban/jail.conf
-        dest: /etc/fail2ban/jail.local
-
-    - name: "fail2ban | edit comments in jail.local"
-      replace:
-        path: /etc/fail2ban/jail.local
-        regexp: "(^\\[sshd\\][\\s\\S]*?)({{ item }})"
-        replace: "\\1#{{ item }}"
-      with_items: "{{ f2b_jail_local_sshd_commented }}"
-
-    - name: "fail2ban | edit sshd in jail.local"
-      lineinfile:
-        path: /etc/fail2ban/jail.local
-        regexp: "^\\[sshd\\]"
-        line: "{{ f2b_jail_local_sshd_edits }}"
-        state: present
-
-    - name: "fail2ban | start fail2ban and ensure it starts on a fresh reboot."
-      service:
-        name: fail2ban
-        state: started
-        enabled: yes
+        - name: "fail2ban | start fail2ban and ensure it starts on a fresh reboot."
+          ansible.builtin.service:
+            state: started
+            name: fail2ban
+            enabled: yes
+      rescue:
+        - name: "fail2ban | encountered an error"
+          ansible.builtin.debug:
+            msg: "Usually the error is that config files don't exist. Check. /etc/fail2ban/fail2ban.conf and jail.conf."

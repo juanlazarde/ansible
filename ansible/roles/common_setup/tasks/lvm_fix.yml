@@ -2,7 +2,7 @@
 - name: "lvm fix | resize"
   when: ansible_distribution == "Ubuntu"
   become: true
-  lvol:
+  community.general.lvol:
     vg: ubuntu-vg
     lv: ubuntu-lv
     size: +100%FREE
@@ -11,5 +11,5 @@
   ignore_errors: true
 
 - name: "lvm fix | manage if no volume"
-  debug: msg="{{ lvol_exists.msg }}"
   when: lvol_exists.failed
+  debug: msg="{{ lvol_exists.msg }}"

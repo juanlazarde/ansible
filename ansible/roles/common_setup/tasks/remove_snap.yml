@@ -16,22 +16,22 @@
       - ~/snap
   block:
     - name: "remove snap | shutdown services, sockets and timers"
-      service:
+      ansible.builtin.service:
         name: snapd
         state: stopped
         enabled: false
       failed_when: false
 
     - name: "remove snap | uninstall"
-      apt:
+      ansible.builtin.package:
         name: snapd
         state: absent
         purge: true
 
     - name: "remove snap | block future installs"
-      blockinfile:
+      ansible.builtin.blockinfile:
         create: true
-        dest: /etc/apt/preferences.d/snapd.pref
+        dest: "/etc/apt/preferences.d/snapd.pref"
         mode: 0644
         block: |
           Package: snapd
@@ -39,7 +39,7 @@
           Pin-Priority: -1
 
     - name: "remove snap | remove directories"
-      file:
+      ansible.builtin.file:
         path: "{{ item }}"
         state: absent
       loop: "{{ snapd_files }}"
