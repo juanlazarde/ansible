@@ -5,6 +5,7 @@
     ssh_dir: "~/.ssh"
   block:
     - name: "ssh keypair | install dependencies"
+      become: true
       ansible.builtin.package:
         state: present
         name:
