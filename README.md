@@ -30,14 +30,14 @@ Once installed, your workstation will be 90% ready. I can't think about what the
 
 **The code here, will not run out-of-the-box**. You need to configure hosts.yml and possibly ansible.cfg.
 
-# Table of Contents
+#### Table of Contents
 - [Contents](#contents)
 - [Install](#install)
 - [Install TL;DR](#installtldr)
 - [Usage](#usage)
 - [Debug](#debug)
 
-# My setup
+#### My setup
 - Bare metal rack server.
 - Proxmox Hypervisor.
 - Multple VM's and LXD's.
@@ -45,20 +45,25 @@ Once installed, your workstation will be 90% ready. I can't think about what the
 - Testing all on Virtualbox VM's.
 - Mostly using Ubuntu or lightweight variant.
 
-# Supported platforms
+#### Supported platforms
 - Ubuntu 20.04 LTS.
 - Windows WSL Ubuntu 20.04.
 
 # Contents
-- `ansible_install.sh` bash to install ansible, clone locally this repository, install vault key, and encrypt secrets. **Start here**
+- `ansible_install.sh` bash to install ansible, clone this repository, install vault key, and encrypt. **Start here**
 - `.\ansible` directory has ansible scripts, configs, playbooks, hosts, and roles.
 - `.\ansible\ansible.cfg` all of ansible's parameters.
-- `.\ansible\hosts.yml` customize your hosts and variables here. I didn't creaete global_vars or vars.
-- `.\ansible\deploy_ssh.yml` playbook that creates ssh key pairs ans deploys to hosts.
+- `.\ansible\hosts.yml` customize your hosts and variables here. I didn't create global_vars or vars.
+- `.\ansible\deploy_ssh.yml` playbook that creates ssh key pairs and deploys these to the hosts.
 - `.\ansible\playbook.yml` playbook that makes everything happen.
-- `.\ansible\run.sh` lazy bash script to speed up typing boring commands. This would be your quarterback for the plays.
+- `.\ansible\run.sh` lazy bash script to speed up typing boring commands. This is your quarterback for the plays.
 - `~\.vault_key` this file is outside of the repository (of course!). Holds the keys to the castle. Wherever you see a `!vault |` and garbled text, this is what you need to encrypt/decrypt. Use the `ansible_install.sh` to make this file super easy.
 - `prep_vm.sh` helps prepare VM. I.e. removes machine-id, etc.
+
+# Overview
+1. You install Ansible and this repository on your machine.
+2. Configure a couple of files to meet your needs.
+3. Then, you can either run the scripts to configure your machine as a workstation, set a remote machine as a workstation, or set multiple machines as servers.
 
 # Install
 Download the installation script: `ansible_install.sh` by running this line:
@@ -88,14 +93,14 @@ Make the most out of `ansible_install.sh`:
 
     Usage without arguments will install ansible, scripts, and vault key.
 
-    Usage: bash ansible_install.sh [[-a] [-r] [-v] | [-e [FILENAME]] [-d DIRECTORY] [-h]
+    Usage: bash ansible_install.sh [[-a|--no-ansible] [-r|--no-repository] [-v|--no-vault] | [-e|encrypt [FILENAME]] [-d DIRECTORY] [-h|--help]
 
     Optional arguments:
 
     -h, --help                : this help text.
-    -a, --no-ansible          : don't install Ansible and dependencies. DEFAULT: true
-    -r, --no-repository       : don't download repository with scripts. DEFAULT: true
-    -v, --no-vault            : don't create a secret vault key. DEFAULT: true
+    -a, --no-ansible          : don't install Ansible and dependencies.
+    -r, --no-repository       : don't download repository with scripts.
+    -v, --no-vault            : don't create a secret vault key.
     -d <directory>            : directory where you want to install the Ansible scripts.
     -e, --encrypt <filename>  : create ansible hashed and encrypted variable. DEFAULT: false
 
@@ -115,33 +120,31 @@ To save them to files you can:
 
     bash ansible_install.sh -e encrypted_text.txt
 
-Now you'll need to copy this text and paste it to the `hosts.yml` file for example. When you can't copy/paste, here're a couple of ways we can do this. Feel free to offer other ideas or request a better solution through the issue tracker. 
-1. Insert text into hosts.yml.
+Now you'll need to copy this text and paste it to the `hosts.yml` file for example. When you can't copy/paste, here're a couple of ways we can do this. Feel free to offer other ideas or request a better solution through the issue tracker. `pbcopy` doesn't work on Ubuntu.
+1. Insert encrypted text directly into hosts.yml.
 2. Pull encrypted file directly in the task.
 
 #### 1. Insert text into hosts.yml
 Run this command:
 
-    sed -i.bak "/sudo_ssh_passphrase:/r encrypted_text.txt" ~/ansible_scripts/ansible/hosts.yml
+    sed -i.bak "/local_password:/r encrypted_text.txt" ~/ansible_scripts/ansible/hosts.yml
 
 Explanation:
 * `sed` stream editor that filters and transforms text.
 * `-i.bak` creates a backup of the original file. In this case, `hosts.yml`
-* `/sudo_ssh_passphrase:` command to search for this string within the file. In this case, `hosts.yml`
+* `/local_password:` command to search for string (`local_password`) within the file (`hosts.yml`)
 * ` /r encrypted_text.txt` reads the file `encrypted_text.txt`, which we created in the previous step.
 * `~/ansible_scripts/ansible/hosts.yml` this is the file being edited.
 
 The variables I've set to encrypted values in `hosts.yml`, are:
-* `sudo_ssh_passphrase`
-* `sudo_password`
+* `local_password`
+* `guest_password`
 
-But, we'll need to edit it to adjust the proper YAML format. In example:
+But, we'll need to edit it to adjust the proper YAML format. Watch for any spaces in wrong places, trim trailing spaces. In example:
 
-    sudo_ssh_passphrase: !vault |
+    local_password: !vault |
         $ANSIBLE_VAULT;1.1;AES256
         376563383...
-
-Watch for any spaces in wrong places, trim trailing spaces.
 
 So,
 
@@ -152,12 +155,14 @@ Remember to delete the `encrypted_text.txt`:
     rm encrypted_text.txt
 
 #### 2. Pull the encrypted text directly from the file.
-Insert the follwing line where the info is required:
+Insert the following line where the info is required:
 
     "{{ lookup('file', './encrypted_text.txt', errors='warn') }}"
 
+One last word about the output. This file 1) hashes and 2) encrypts. So, if you decrypt the file or look it up, like mentioned just above, you'll see a hash. Your password is nowhere to be found. Remember this.
+
 ## Check connection to hosts
-Enter the following command to make sure ansible works and that you can connect to your hosts:
+Enter the following command to make sure ansible works and that you can connect to your hosts. It may fail if you don't have aproper SSH connection to the hosts:
     
     ansible all -m ping
 
@@ -187,17 +192,24 @@ Run
 # Usage
 I've created a `run.sh` bash script to simplify my life. But, you can just as easily write command lines.
 
-## Create and deploy SSH key pair
-Start here, to make sure there's a proper connection to the hosts.
+## First, create and deploy SSH key pair
+Start here to make sure there's a proper connection to the hosts. This will run in two stages. First, creates a passwordless SSH key pair for the current machine. Second stage, deploys the public key to all the hosts.
 
     cd ~/ansible_scripts/ansible
     bash run.sh --deploy-ssh
 
 get help with `bash run.sh --help`.
 
-It will ask for several passwords. First, is the localhost sudo password. Then, it will ask for the remote user's SSH password (usually the same as the user's password); typically, this user and password is the same for all hosts. Lastly, it'll ask for a remote sudo password, usually pressing ENTER will do it.
+It will ask for several passwords. First, is the localhost sudo password. Then, it will ask for the remote user's SSH password (usually the same as the user's password) Lastly, it'll ask for a remote sudo password, usually pressing ENTER will do it.
 
 This will create a passwordless private and public key in your local `~/.ssh/` directory, then it will connect to all other hosts and will push the public key to their `~/.ssh/authorized_keys`. You can then test it by `ssh -i ~/.ssh/<ansible key> <remote_user>@<host_ip>` and it shouldn't ask for a password. Success!
+
+This script basically does the following:
+
+    ansible-playbook deploy_ssh.yml --limit localhost
+    ansible-playbook deploy_ssh.yml --ask-pass --limit "all:!localhost"
+
+You can target a specific host via: `--limit 192.168.0.17`
 
 ## Next, workstation
 The script will update and install workstation-client related items. These 'workstation' plays can be applied to the computer you're on; a.k.a. localhost, or to a remote host.
@@ -208,7 +220,7 @@ The script will update and install workstation-client related items. These 'work
 
 if you've set up the `ansible.cfg` file correctly:
 
-    ansible-playbook playbook.yml -l workstations -t setup
+    ansible-playbook playbook.yml --limit workstations --tags setup
 
 **or**
 
@@ -217,18 +229,13 @@ if you've set up the `ansible.cfg` file correctly:
 Notice the following:
 1. `ask-become-pass` will request sudo password, which is needed for some plays.
 2. `--vault-password-file ~/.vault_key` is the secret file that helps decrypt `!vault` variables.
-3. `-l "workstations"` it limits the plays to be applied to the workstations defind in `host.yml`.
+3. `-l "workstations"` it limits the plays to be applied to the workstations defined in `host.yml`.
 4. `-t "setup"` it limits the plays to those tagged for setup.
 
 Some ansible quirks:
 
 - `Sorry, try again`. May happen if you've entered the wrong sudo password. Action -> Hit CTRL+C, run again.
 - `reboot` module is not executable for a local connection. Meaning, it won't reboot the workstation with the ansible agent. Action -> `sudo shutdown -r now`
-
-## Then, deploy the ansible ssh keys to all servers-hosts.
-It's very helpful, recommended even, to create an 'ansible' SSH key pair in the workstation-client. Then Distribute the public key to all the hosts, and save it to the authorized key file. This way your ansible plays will establish a valid connection to each host, do their job, and get out.
-
-    bash run.sh --deploy-ssh
 
 ## Finally, setup all server.
 These are all the plays to be applied to the server group only. These are the remote hosts, like Apache, TrueNas, reverse-proxy, etc.
@@ -246,7 +253,7 @@ You'll need to include the flag `-C` with the ansible command. For extra verbosi
 
 **or**
 
-    bash sun.sh workstations setup --debug
+    bash run.sh workstations setup --debug
 
 
 # Tags and Limits
@@ -321,16 +328,16 @@ Test connection:
 # Debug
 Use tags `-t "test"`, step by step `--step`, start at a certain task `--start-at-task "here"`, and show what's under the hood with `-vvv`
 
-    ansible-playbook playbook.yml -i hosts.yml --ask-become-pass --vault-password-file ~/.vault_key -l "workstations" -t "setup" --start-at-task="test" --step -vvv
+    ansible-playbook playbook.yml -i hosts.yml --ask-become-pass --vault-password-file ~/.vault_key -l "workstations" -t "setup" --start-at-task="debugging" --step -vvv
 
 Evaluate a variable with a dummy tasK:
 
-    - name: Debugging
+    - name: debugging
       debug: msg="{{ some.variable}}"
 
 **also**
 
-    bash run.sh workstations setup --start-at-task="test" --step --debug
+    bash run.sh workstations setup --args --start-at-task="test" --step --debug
 
 # Bonus - Prepare the VM
 When creating a VM template for i.e. Proxmox, it's recommended to prepare the current session. Here's a script that will help set some of these out.
