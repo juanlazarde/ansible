@@ -53,7 +53,7 @@
     - name: "secure ssh | disable password login"
       lineinfile:
         path: "{{ ssh_sshd_config }}"
-        regexp: "^((?:(?!#).)*?|^#\\s?)PasswordAuthentication\\s(yes|no)"
+        regexp: "^(?:.*?|#\\s?)PasswordAuthentication\\s(?=yes|no)"
         # consider: "^(#  *)?PermitRootLogin (yes|no)"
         # consider: "^(#\s*)?PasswordAuthentication "
         line: "PasswordAuthentication no"
