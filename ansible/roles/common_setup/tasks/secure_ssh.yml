@@ -20,6 +20,7 @@
     - name: "secure ssh | edit {{ ssh_sshd_config }}"
       lineinfile:
         path: "{{ ssh_sshd_config }}"
+        backup: true
         regexp: "{{ item.regexp }}"
         line: "{{ item.line }}"
       loop:
