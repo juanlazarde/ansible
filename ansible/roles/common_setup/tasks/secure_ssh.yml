@@ -15,7 +15,7 @@
       register: add_identity_key
 
     - name: "secure ssh | authorized_keys maintenance"
-      ansible.builtin.shell: sort --unique -o ~/.ssh/authorized_keys{,}
+      ansible.builtin.shell: sort --unique -o /home/{{ guest_user }}/.ssh/authorized_keys{,}
 
     - name: "secure ssh | edit {{ ssh_sshd_config }}"
       lineinfile:
